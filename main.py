@@ -1,0 +1,428 @@
+# main.py  –– high-frequency OANDA bot
+import csv
+import importlib
+import json
+import os
+import itertools
+import time
+from collections import deque
+from datetime import datetime
+from requests.exceptions import ChunkedEncodingError
+
+import logging
+
+# Configure logging for live trading
+logging.basicConfig(
+    filename="live_trading.log",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+from oandapyV20.endpoints.accounts import AccountSummary
+from broker import place_risk_managed_order
+from data.core import (
+    OANDA_ACCOUNT_ID as ACCOUNT,
+    api as API,
+    build_active_list,
+    get_candles,
+    stream_bars,
+)
+from strategy.utils import sl_tp_levels
+
+try:
+    from meta_optimize import run_meta_bandit
+except ImportError:
+    def run_meta_bandit(*args, **kwargs):
+        """Stub for tests if meta_optimize missing."""
+        pass
+
+try:
+    from strategy.plugins import get_enabled_strategies
+except ImportError:
+    def get_enabled_strategies():
+        """Stub for tests if strategy.plugins missing."""
+        return []
+
+# Inline manager functionality
+CONFIG_FILE = "live_config.json"
+POLL_INTERVAL = 60  # seconds
+
+
+def load_config():
+    with open(CONFIG_FILE, "r") as f:
+        return json.load(f)
+
+
+def load_strategies():
+    """Instantiate strategy classes listed under 'enabled' in the config."""
+    cfg = load_config()
+    instances = []
+    for name in cfg.get("enabled", []):
+        params = cfg.get(name, {})
+        raw = name.lower()
+        # map strategy names to filenames
+        if raw == "macdtrend":
+            raw = "macd_trends"
+        elif raw == "rsireversion":
+            raw = "rsi_reversion"
+        module_name = f"strategy.{raw}"
+        try:
+            module = importlib.import_module(module_name)
+            cls = getattr(module, f"Strategy{name}")
+            instances.append(cls(params))
+        except Exception as e:
+            print(f"[manager] Error loading {name}: {e}")
+    return instances
+
+
+def watch_strategies():
+    """
+    Generator yielding updated strategy lists whenever the config changes.
+    """
+    last_mtime = None
+    strategies = []
+    while True:
+        try:
+            mtime = os.path.getmtime(CONFIG_FILE)
+        except Exception:
+            mtime = None
+        if mtime != last_mtime:
+            strategies = load_strategies()
+            print("[manager] Loaded strategies:", [s.name for s in strategies])
+            last_mtime = mtime
+        time.sleep(POLL_INTERVAL)
+        yield strategies
+
+
+# End inline manager
+
+
+# Load optimized parameters (handle missing keys gracefully)
+with open("best_params.json", "r") as _f:
+    _best = json.load(_f)
+
+# BEST_FAST    = _best.get("fast")        # no longer used
+# BEST_SLOW    = _best.get("slow")        # no longer used
+BEST_SL_MULT = _best.get("sl_mult", 1.5)  # sensible fallback
+BEST_TP_MULT = _best.get("tp_mult", 2.0)
+
+
+# Allowed decimal precision per instrument
+PRECISION = {
+    # JPY pairs (2 decimal places)
+    "GBP_JPY": 2,
+    "EUR_JPY": 2,
+    "NZD_JPY": 2,
+    "USD_JPY": 2,
+    # Major crosses (5 decimal places)
+    "GBP_USD": 5,
+    "EUR_USD": 5,
+    "AUD_USD": 5,
+    "USD_CAD": 5,
+    "USD_CHF": 5,
+    # Other common pairs (adjust as needed)
+    "AUD_JPY": 2,
+    "EUR_GBP": 5,
+    "GBP_AUD": 5,
+    "EUR_AUD": 5,
+    # Default fallback
+}
+
+
+def round_price(instrument: str, price: float) -> str:
+    """Round price to the allowed precision for the given instrument."""
+    prec = PRECISION.get(instrument, 5)
+    return f"{price:.{prec}f}"
+
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+ALL_PAIRS = [
+    "EUR_USD",
+    "GBP_USD",
+    "AUD_USD",
+    "NZD_USD",
+    "USD_JPY",
+    "USD_CHF",
+    "USD_CAD",
+    "EUR_JPY",
+    "EUR_GBP",
+    "EUR_AUD",
+    "EUR_CHF",
+    "EUR_CAD",
+    "GBP_JPY",
+    "GBP_AUD",
+    "GBP_CHF",
+    "GBP_CAD",
+    "AUD_JPY",
+    "AUD_NZD",
+    "AUD_CAD",
+    "NZD_JPY",
+    "NZD_CAD",
+]  # 20 majors & crosses
+
+BAR_SECONDS = 2  # aggregation window
+MAX_UNITS = 1000  # cap position size to avoid excessive orders
+LOG_FILE = "trades_log.csv"
+BANDIT_DRAWDOWN_THRESHOLD = 0.05  # 5% drawdown triggers live re-optimization
+BANDIT_ROUNDS = 50
+
+# ---------------------------------------------------------------------------
+# State
+# ---------------------------------------------------------------------------
+ACTIVE_PAIRS = build_active_list(ALL_PAIRS, top_k=10)
+
+pair_cycle = itertools.cycle(ACTIVE_PAIRS)
+history = {p: deque(maxlen=300) for p in ALL_PAIRS}
+atr_history = {p: deque(maxlen=30) for p in ALL_PAIRS}
+recent_trades = deque(maxlen=100)  # store True=win, False=loss for last 100 trades
+last_equity_fetch = 0.0
+account_equity = 1000.0  # will be refreshed from API
+peak_equity = account_equity
+drawdown_pct = 0.0
+last_order_ts = 0.0  # epoch seconds
+
+# Load and watch for config changes to strategies
+strategy_instances = load_strategies()
+config_watcher = watch_strategies()
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def log_trade(
+    pair: str,
+    side: str,
+    units: int,
+    order_id: str,
+    entry: float,
+    sl: float,
+    tp: float,
+    atr: float,
+    session_hour: int,
+):
+    """Append one trade entry to LOG_FILE."""
+    file_exists = os.path.isfile(LOG_FILE)
+    with open(LOG_FILE, mode="a", newline="") as f:
+        w = csv.writer(f)
+        if not file_exists:
+            w.writerow(
+                [
+                    "timestamp",
+                    "pair",
+                    "side",
+                    "units",
+                    "order_id",
+                    "entry",
+                    "stop_loss",
+                    "take_profit",
+                    "ATR",
+                    "session_hour",
+                ]
+            )
+        w.writerow(
+            [
+                datetime.utcnow().isoformat(),
+                pair,
+                side,
+                units,
+                order_id,
+                f"{entry:.5f}",
+                sl,
+                tp,
+                f"{atr:.5f}",
+                session_hour,
+            ]
+        )
+
+
+# ---------------------------------------------------------------------------
+# Core trading logic
+# ---------------------------------------------------------------------------
+
+
+# Unified signal handler for modular strategies
+def handle_signal(pair: str, price: float, signal: str):
+    """
+    Issue order for a given signal using risk-managed broker.
+    """
+    global last_order_ts, account_equity, last_equity_fetch, peak_equity, drawdown_pct
+
+    # Force the first equity refresh to run
+    global last_equity_fetch
+    last_equity_fetch = 0.0
+
+    if not signal:
+        logger.debug(f"{pair} | NO SIGNAL")
+        return
+
+    # Normalize signal to uppercase for sl_tp_levels
+    signal = signal.upper()
+
+    # Enforce rate-limit
+    if time.time() - last_order_ts < BAR_SECONDS:
+        return
+
+    # Compute ATR (placeholder)
+    atr = 0.0005
+
+    # Determine SL/TP levels
+    sl_raw, tp_raw = sl_tp_levels(
+        price, signal, atr, sl_mult=BEST_SL_MULT, tp_mult=BEST_TP_MULT
+    )
+    sl = round_price(pair, sl_raw)
+    tp = round_price(pair, tp_raw)
+    # Skip if stop-loss equals entry price to avoid zero-risk errors
+    if float(sl) == price:
+        logger.warning(f"{pair} | SKIP {signal} @ {price:.5f}: SL equals entry")
+        return
+
+    # Refresh equity every 30s
+    if time.time() - last_equity_fetch >= 30:
+        last_equity_fetch = time.time()
+
+        # Compute drawdown based on existing equity first
+        peak_equity = max(peak_equity, account_equity)
+        drawdown_pct = (peak_equity - account_equity) / peak_equity
+
+        if drawdown_pct > BANDIT_DRAWDOWN_THRESHOLD:
+            logger.warning(f"Drawdown exceeded 5%: {drawdown_pct:.2%}")
+            # Live bandit re-optimization on drawdown
+            logger.info("Triggering live meta-bandit optimization due to drawdown")
+            try:
+                strategies = get_enabled_strategies()
+                historical_candles = get_candles(pair, "H1", 2000)
+                run_meta_bandit(
+                    strategies=strategies,
+                    candles=historical_candles,
+                    rounds=BANDIT_ROUNDS,
+                )
+                strategy_instances[:] = load_strategies()
+            except Exception as e:
+                logger.error("Live bandit optimization failed", exc_info=True)
+        if drawdown_pct > 0.10:
+            logger.error(f"Drawdown exceeded 10%: {drawdown_pct:.2%}")
+
+        # Now fetch fresh equity for next cycle
+        try:
+            summary = API.request(AccountSummary(ACCOUNT))
+            account_equity = float(summary["account"]["NAV"])
+        except Exception as e:
+            logger.error("Equity fetch error", exc_info=True)
+
+    # Base risk fraction
+    risk_frac = 0.01
+    # Reduce risk if drawdown exceeds 5%
+    if drawdown_pct > 0.05:
+        risk_frac *= 0.5
+    # Further reduction if drawdown exceeds 10%
+    if drawdown_pct > 0.10:
+        risk_frac *= 0.5
+
+    # Place order
+    resp = place_risk_managed_order(
+        instrument=pair,
+        side=signal,
+        price=price,
+        stop_price=float(sl),
+        equity=account_equity,
+        risk_pct=risk_frac,
+        tp_price=float(tp),
+    )
+    order_tx = resp["orderCreateTransaction"]
+    order_id = order_tx["id"]
+    units = int(order_tx["units"])
+
+    session_hour = datetime.utcnow().hour
+    print(f"{pair} | {signal} @ {price:.5f} SL {sl} TP {tp} UNITS {units} → {order_id}")
+    log_trade(pair, signal, units, order_id, price, sl, tp, atr, session_hour)
+
+    last_order_ts = time.time()
+
+
+def handle_bar(bar_close: dict):
+    """Process one 5-second bar set (bar_close is {pair: price})."""
+    # Update history for each active pair in this bar
+    for pair, price in bar_close.items():
+        if pair in ACTIVE_PAIRS and price is not None:
+            history[pair].append(price)
+
+    # Check for updated strategy config
+    try:
+        strategy_instances[:] = next(config_watcher)
+    except StopIteration:
+        pass
+
+    # Evaluate and handle signals for each active pair
+    for pair in list(ACTIVE_PAIRS):
+        price = bar_close.get(pair)
+        if price is None:
+            continue
+
+        # Aggregate signals from all enabled strategies
+        signal = None
+        for strat in strategy_instances:
+            sig = strat.next_signal(list(history[pair]))
+            if sig:
+                signal = sig
+                break
+
+        # Handle the signal for this pair
+        handle_signal(pair, price, signal)
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap historical closes so signals are ready immediately
+# ---------------------------------------------------------------------------
+def bootstrap_history():
+    """Pre‑fill `history` deques with ~300 recent closes for each pair."""
+    print("Bootstrapping price history …")
+    for pair in ALL_PAIRS:
+        try:
+            candles = get_candles(symbol=pair, count=300)
+            closes = [float(c["mid"]["c"]) for c in candles]
+            history[pair].extend(closes)
+            # seed ATR deque too (smaller)
+            for c in candles[-30:]:
+                h, l, c_ = (
+                    float(c["mid"]["h"]),
+                    float(c["mid"]["l"]),
+                    float(c["mid"]["c"]),
+                )
+                prev_c = closes[closes.index(c_) - 1] if len(closes) > 1 else c_
+                tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+                atr_history[pair].append(tr)  # raw TR; compute ATR later if needed
+        except Exception as e:
+            print(f"Bootstrap error for {pair}: {e}")
+    print("Bootstrap complete.")
+
+
+# ---------------------------------------------------------------------------
+# Main event loop
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    bootstrap_history()
+    last_active_refresh = time.time()
+    print(f"Streaming {BAR_SECONDS}-second bars … Ctrl-C to stop.")
+    while True:
+        try:
+            # Refresh active pairs every 5 minutes
+            if time.time() - last_active_refresh >= 300:
+                ACTIVE_PAIRS[:] = build_active_list(ALL_PAIRS, top_k=10)
+                last_active_refresh = time.time()
+                print(f"Active pairs updated: {ACTIVE_PAIRS}")
+
+            for bar in stream_bars(ALL_PAIRS, seconds=BAR_SECONDS):
+                handle_bar(bar)
+        except KeyboardInterrupt:
+            logger.info("Stopped by user. Closing profitable positions.")
+            break
+        except ChunkedEncodingError:
+            logger.warning("Stream dropped—reconnecting in 1s…", exc_info=True)
+            time.sleep(1)
+            continue
+        except Exception:
+            logger.exception("Unexpected error in main loop, shutting down.")
+            break

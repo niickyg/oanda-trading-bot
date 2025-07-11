@@ -1,0 +1,76 @@
+# 1. Navigate to project directory
+cd ~/Projects/oanda_bot
+
+# 2. Activate the virtualenv
+source .venv/bin/activate
+
+# 3. Install/update dependencies
+pip install -r requirements.txt
+
+# 4. Run the trading bot
+python main.py
+
+# 5. Run the optimizer
+python optimize.py
+
+# 6. Run with specific candle count or target win rate
+python optimize.py --count 1000 --target-win-rate 0.6
+
+# 7. Check the last N lines of the log
+tail -n 50 trades.log
+tail -n 50 optimize.log
+
+# 8. View the best-params JSON
+cat best_params.json | jq
+
+# 9. Open the README in your default editor
+${EDITOR:-vi} readme.md
+
+# 10. Edit your crontab
+crontab -e
+
+# 11. Test for errors by printing tracebacks
+#   (ensure your main.py has the try/except guard)
+python main.py
+
+# 12. Deactivate the virtualenv
+deactivate
+
+# 13. Git status and diffs
+git status
+git diff
+
+# 14. Commit and push changes
+git add .
+git commit -m "Your message"
+git push origin main
+
+# 15. Run the meta-optimization bandit
+python meta_optimize.py --rounds 100
+
+# 16. Inspect the live_config.json winners
+cat live_config.json | jq
+
+# 17. Tail all logs in real time
+tail -f trades.log optimize.log
+
+# 18. Search codebase for a pattern
+grep -R "def update_trade_result" -n .
+
+# 19. Show current Git branches
+git branch -a
+
+# 20. Display last Git commit
+git log -1
+
+# 21. Check disk usage for project
+du -sh .
+
+# 22. List installed Python packages matching a name
+pip freeze | grep <package>
+
+# 23. Run code style checks
+flake8 .
+
+# 24. Display active Python processes
+ps aux | grep python
