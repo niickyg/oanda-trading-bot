@@ -1,3 +1,4 @@
+
 # macOS Finder metadata files
 .DS_Store
 # Byte-compiled / optimized / DLL files
@@ -207,3 +208,52 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+
+# IDE/editor folders
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+live_trading.log
+backtest.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Data files and outputs
+best_params*.json
+results_*.json
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and credentials
+.env
+*.key
+*.pem
+
+# Build & packaging
+dist/
+build/
+*.egg-info/
+
