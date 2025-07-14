@@ -33,6 +33,8 @@ jobs:
 
       # 5 Run unit tests
       - name: Run pytest
+        env:
+          OANDA_TOKEN: FAKE_TOKEN_1234567890
         run: pytest --maxfail=1 --disable-warnings -q
 
       # 6 Run backtests on your core strategies
