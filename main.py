@@ -10,7 +10,6 @@ from datetime import datetime
 from requests.exceptions import ChunkedEncodingError
 
 import pkgutil
-import importlib
 from strategy.base import BaseStrategy
 
 
@@ -68,7 +67,10 @@ def load_strategies():
 
     strategies = []
     # Walk through all sub‑modules inside strategy/
-    for _, module_name, _ in pkgutil.iter_modules(strategy_pkg.__path__, strategy_pkg.__name__ + "."):
+    for _, module_name, _ in pkgutil.iter_modules(
+        strategy_pkg.__path__,
+        strategy_pkg.__name__ + ".",
+    ):
         module = importlib.import_module(module_name)
         for obj in vars(module).values():
             if (
