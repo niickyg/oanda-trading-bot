@@ -14,13 +14,18 @@ logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path("live_config.json")
 
+
 class ConfigManager:
     """
     Watches the live_config.json for changes, validates it, and notifies
     subscribers on update.
     """
 
-    def __init__(self, on_update: Callable[[Dict[str, Any]], None], poll_interval: float = 1.0):
+    def __init__(
+        self,
+        on_update: Callable[[Dict[str, Any]], None],
+        poll_interval: float = 1.0,
+    ):
         self._on_update = on_update
         self._poll_interval = poll_interval
         self._last_mtime = None
@@ -48,7 +53,7 @@ class ConfigManager:
                         logger.info("Config reloaded from %s", CONFIG_PATH)
                         self._last_cfg = cfg
                     self._last_mtime = mtime
-                except Exception as e:
+                except Exception:
                     logger.error("Error loading config", exc_info=True)
             time.sleep(self._poll_interval)
 

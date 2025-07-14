@@ -22,6 +22,23 @@ __all__ = [
 
 BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
 
+# Map keyword substrings to OANDA instrument codes
+_PAIR_KEYWORDS = {
+    "eurusd": "EUR_USD",
+    "gbpusd": "GBP_USD",
+    "usdjpy": "USD_JPY",
+    "usdchf": "USD_CHF",
+    "audusd": "AUD_USD",
+    "nzdusd": "NZD_USD",
+    "gbpjpy": "GBP_JPY",
+    "eurjpy": "EUR_JPY",
+}
+
+# Simple sentiment keywords
+_BUY_KEYWORDS = {"buy", "long", "rally", "bullish", "trend up"}
+_SELL_KEYWORDS = {"sell", "short", "drop", "bearish", "trend down"}
+
+
 def get_recent_tweets(query: str, max_results: int = 10) -> List[Dict]:
     """
     Fetch recent tweets matching the query using Twitter API v2.
@@ -43,6 +60,7 @@ def get_recent_tweets(query: str, max_results: int = 10) -> List[Dict]:
     json_resp = resp.json()
     return json_resp.get("data", [])
 
+
 def fetch_forex_news_from_twitter(max_results: int = 5) -> List[Dict]:
     """
     Shortcut to fetch the top recent tweets mentioning major Forex keywords.
@@ -54,22 +72,6 @@ def fetch_forex_news_from_twitter(max_results: int = 5) -> List[Dict]:
 # ---------------------------------------------------------------------------
 # News-based trade signals
 # ---------------------------------------------------------------------------
-
-# Map keyword substrings to OANDA instrument codes
-_PAIR_KEYWORDS = {
-    "eurusd": "EUR_USD",
-    "gbpusd": "GBP_USD",
-    "usdjpy": "USD_JPY",
-    "usdchf": "USD_CHF",
-    "audusd": "AUD_USD",
-    "nzdusd": "NZD_USD",
-    "gbpjpy": "GBP_JPY",
-    "eurjpy": "EUR_JPY",
-}
-
-# Simple sentiment keywords
-_BUY_KEYWORDS = {"buy", "long", "rally", "bullish", "trend up"}
-_SELL_KEYWORDS = {"sell", "short", "drop", "bearish", "trend down"}
 
 def interpret_news_signals(tweets: List[Dict]) -> Dict[str, str]:
     """
