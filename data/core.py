@@ -17,34 +17,29 @@ OANDA_TOKEN = os.getenv("OANDA_TOKEN")
 OANDA_ENV = os.getenv("OANDA_ENV", "practice")
 OANDA_ACCOUNT_ID = os.getenv("OANDA_ACCOUNT_ID")
 
-# --- sanity checks ----------------------------------------------------------
-if not OANDA_TOKEN or len(OANDA_TOKEN.strip()) < 30:
-    raise RuntimeError(
-        "OANDA_TOKEN is missing or looks too short.\n"
-        "1) Log in to OANDA Practice → Tools → API → Generate Token\n"
-        "2) Copy the full token into your .env file:\n"
-        "   OANDA_TOKEN=PASTE_FULL_TOKEN_HERE\n"
-        "3) Re‑run the script from the oanda_bot folder.\n"
-    )
 
-if OANDA_ENV not in {"practice", "live"}:
-    raise RuntimeError(
-        f'OANDA_ENV must be "practice" or "live", got "{OANDA_ENV}". '
-        'Check your .env file.'
-    )
+def _get_token() -> str:
+    token = os.getenv("OANDA_TOKEN", "")
+    if len(token.strip()) < 30:
+        raise RuntimeError(
+            "OANDA_TOKEN is missing or looks too short.\n"
+            "Set it in your environment or .env file."
+        )
+    return token
 
-if not OANDA_ACCOUNT_ID or len(OANDA_ACCOUNT_ID.strip()) < 6:
-    raise RuntimeError(
-        "OANDA_ACCOUNT_ID is missing or looks wrong.\n"
-        "1) Log in to OANDA → Accounts → copy the Practice account number\n"
-        "2) Add to .env:\n"
-        "   OANDA_ACCOUNT_ID=YOUR_ACCOUNT_NUMBER\n"
-    )
-# ---------------------------------------------------------------------------
+
+def _get_account_id() -> str:
+    acc = os.getenv("OANDA_ACCOUNT_ID", "")
+    if len(acc.strip()) < 6:
+        raise RuntimeError(
+            "OANDA_ACCOUNT_ID is missing or looks wrong.\n"
+            "Set it in your environment or .env file."
+        )
+    return acc
 
 
 # 2) one shared API client
-api = oandapyV20.API(access_token=OANDA_TOKEN, environment=OANDA_ENV)
+api = oandapyV20.API(access_token=_get_token(), environment=OANDA_ENV)
 
 
 @api_retry
@@ -115,7 +110,7 @@ def stream_bars(pairs, seconds: int = 5):
         raise ValueError("pairs list cannot be empty")
 
     params = {"instruments": ",".join(pairs)}
-    stream = pricing.PricingStream(accountID=OANDA_ACCOUNT_ID, params=params)
+    stream = pricing.PricingStream(accountID=_get_account_id(), params=params)
 
     bucket = collections.defaultdict(list)
     bucket_start = _dt.datetime.utcnow()
