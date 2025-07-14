@@ -257,3 +257,9 @@ dist/
 build/
 *.egg-info/
 
+# Local env and logs
+.venv/
+*.log
+*.csv
+*.DS_Store
+
