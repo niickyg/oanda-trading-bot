@@ -1,16 +1,16 @@
-# .flake8
 [flake8]
 max-line-length = 88
 
-# Skip virtualenv, git metadata, and any folders with third-party code
+# Skip virtualenv, tests, research, and CI config
 exclude =
     .venv/,
-    .git/,
+    venv/,
     __pycache__/,
-    build/,
-    dist/
+    tests/,
+    research/,
+    .github/
 
-# Per-file ignores for your own code:
+# Per-file ignores for remaining files
 per-file-ignores =
     backtest.py: E303,E305,E501
     broker.py: E302,E501
@@ -18,5 +18,4 @@ per-file-ignores =
     meta_optimize.py: W292
     config_manager.py: E302,E501,F841
     data/news.py: E302
-    research/auto_strategy_generator.py: E302,E305,E501,W291
-    research/run_research.py: E265,E302,E305,E501,W291
+    strategy/auto_strategy_generator.py: E302,E305,E501,W291
