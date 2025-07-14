@@ -43,7 +43,7 @@ jobs:
       # 7 Upload logs (optional)
       - name: Upload backtest logs
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backtest-logs
           path: backtest.log
