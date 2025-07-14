@@ -135,6 +135,7 @@ def load_strategies():
     import strategy as strategy_pkg  # import the package itself
 
     strategies = []
+    seen: set[type] = set()
     # Walk through all sub‑modules inside strategy/
     for _, module_name, _ in pkgutil.iter_modules(
         strategy_pkg.__path__,
@@ -147,9 +148,9 @@ def load_strategies():
                 and issubclass(obj, BaseStrategy)
                 and obj is not BaseStrategy
             ):
-                # Instantiate with empty config dict, avoid duplicates from aliases
-                if obj not in (type(s) for s in strategies):
+                if obj not in seen:
                     strategies.append(obj({}))
+                    seen.add(obj)
 
     print(f"[manager] Loaded strategies: {[s.name for s in strategies]}")
     return strategies
@@ -329,9 +330,8 @@ def handle_signal(pair: str, price: float, signal: str):
     """
     global last_order_ts, account_equity, last_equity_fetch, peak_equity, drawdown_pct
 
-
     if not signal:
-        logger.debug(f"{pair} | NO SIGNAL")
+        logger.debug("signal.none", extra={"instrument": pair})
         return
 
     # Normalize signal to uppercase for sl_tp_levels
