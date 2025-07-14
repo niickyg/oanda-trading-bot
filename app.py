@@ -70,8 +70,8 @@ if start:
             order_id = resp["orderCreateTransaction"]["id"]
             # Report trade in the app
             st.sidebar.write(
-                f"Traded {pair} {sig} @ {price:.5f}, SL={sl}, "
-                f"TP={tp} → ID {order_id}"
+                f"Traded {pair} {sig} @ {price:.5f}, SL={sl}, TP={tp}, "
+                f"ID {order_id}"
             )
 
 # Handle Close Profitable Positions button

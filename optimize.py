@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
-
+import argparse
+import importlib
+import json
+import time
 import logging
+import numpy as np
+from backtest import run_backtest
+from data.core import get_candles
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-import argparse
-import importlib
-import json
-import time
-
-import numpy as np
-
-from backtest import run_backtest
-from data.core import get_candles
 
 
 def main():
