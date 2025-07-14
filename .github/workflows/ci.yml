@@ -19,6 +19,15 @@ jobs:
         with:
           python-version: '3.9'
 
+      # Cache pip
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       # 3 Install dependencies
       - name: Install dependencies
         run: |
@@ -35,7 +44,7 @@ jobs:
       - name: Run pytest
         env:
           OANDA_TOKEN: 4f7d2e9b0c1A3E6F8G2H0J5K9L1M4N6P8Q2R3T4X
-        run: pytest --maxfail=1 --disable-warnings -q
+        run: pytest --maxfail=1 --disable-warnings -q --durations=10
 
       # 6 Run backtests on your core strategies
       - name: Backtest core strategies
