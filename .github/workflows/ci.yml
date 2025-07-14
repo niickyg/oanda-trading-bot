@@ -28,7 +28,8 @@ jobs:
 
       # 4 Lint your code
       - name: Lint with flake8
-        run: flake8 .
+        run: |
+          flake8 --config .flake8 .
 
       # 5 Run unit tests
       - name: Run pytest
