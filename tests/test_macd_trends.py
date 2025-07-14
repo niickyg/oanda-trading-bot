@@ -1,8 +1,6 @@
-
-
 import pytest
 import numpy as np
-from strategy.macd_trends import StrategyMACDTrend
+from strategy.macd_trends import MACDTrendStrategy
 
 def make_bars(prices):
     """
@@ -17,7 +15,7 @@ def make_bars(prices):
 def trend_strategy():
     # Use default params
     params = {"ema_trend": 5, "macd_fast": 3, "macd_slow": 5, "macd_sig": 2}
-    return StrategyMACDTrend(params)
+    return MACDTrendStrategy(params)
 
 def test_no_signal_on_insufficient_data(trend_strategy):
     # Less than ema_trend + macd_slow bars → no signal
