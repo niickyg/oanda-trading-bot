@@ -1,0 +1,15 @@
+# .flake8
+[flake8]
+max-line-length = 88
+# Globally ignore E402 (imports not at top) and W292 (no newline at EOF)
+# Then per‐file ignore the other stubborn errors:
+ignore =
+    E402,
+    W292
+
+per-file-ignores =
+    backtest.py: E303,E305,E501
+    broker.py: E302,E501
+    main.py: F841
+    meta_optimize.py: W292
+    

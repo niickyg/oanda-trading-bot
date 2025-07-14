@@ -14,6 +14,7 @@ try:
 except ImportError:
     Backtester = None
 
+
 def load_calibration_data():
     """
     Load or generate a small calibration dataset.
@@ -22,6 +23,7 @@ def load_calibration_data():
     """
     # TODO: replace with real data loading logic
     return []
+
 
 def load_round_data(round_index):
     """
@@ -33,6 +35,7 @@ def load_round_data(round_index):
     """
     # TODO: replace with real data loading logic
     return []
+
 
 def select_strategy_ucb(strategies, total_pulls):
     """
@@ -56,6 +59,7 @@ def select_strategy_ucb(strategies, total_pulls):
             best_score = score
             best = strat
     return best
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -103,6 +107,7 @@ def main():
     with open("live_config.json", "w") as f:
         json.dump({"winners": winners}, f, indent=4)
     print("Wrote winning strategy configuration to live_config.json")
+
 
 if __name__ == "__main__":
     main()

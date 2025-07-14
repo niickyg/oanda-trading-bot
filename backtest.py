@@ -5,8 +5,14 @@ backtest.py
 Generic back-tester: import any strategy plugin and run it on historical data.
 It then reports performance metrics.
 """
-
+import argparse
+import json
+import time
+from collections import deque
+from typing import Deque, Dict, Any
 import logging
+from data import get_candles
+from strategy.base import BaseStrategy
 
 logging.basicConfig(
     filename="backtest.log",
@@ -14,16 +20,6 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-import argparse
-import json
-import time
-from collections import deque
-from typing import Deque, Dict, Any
-
-
-from data import get_candles
-from strategy.base import BaseStrategy
 
 
 def load_strategy(name: str, params: Dict[str, Any]) -> BaseStrategy:
@@ -55,7 +51,11 @@ def run_backtest(
     total_win = total_loss = 0.0
 
     bars: Deque = deque(maxlen=warmup + 5)
-    logger.info("Starting backtest: warmup=%d, total candles=%d", warmup, len(candles))
+    logger.info(
+        "Starting backtest: warmup=%d, total candles=%d",
+        warmup,
+        len(candles),
+    )
     for idx, candle in enumerate(candles[:-1]):
         bars.append(candle)
         signal = strategy.next_signal(list(bars))
@@ -84,8 +84,13 @@ def run_backtest(
     total_pnl = total_win - total_loss
 
     logger.info(
-        "Backtest results - trades: %d, win_rate: %.2f%%, avg_win: %.5f, avg_loss: %.5f, expectancy: %.5f",
-        trades, win_rate * 100, avg_win, avg_loss, expectancy
+        "Backtest results - trades: %d, win_rate: %.2f%%, avg_win: %.5f, "
+        "avg_loss: %.5f, expectancy: %.5f",
+        trades,
+        win_rate * 100,
+        avg_win,
+        avg_loss,
+        expectancy,
     )
 
     return {
@@ -140,10 +145,16 @@ def main():
     results = run_backtest(strat, candles, args.warmup)
     elapsed = time.perf_counter() - start
 
-    logger.info("Backtest completed in %.2f seconds", elapsed)
-    print(json.dumps(results, indent=2))
-
-
+    logger.info(
+        "Backtest completed in %.2f seconds",
+        elapsed,
+    )
+    print(
+        json.dumps(
+            results,
+            indent=2,
+        )
+    )
 
 if __name__ == "__main__":
     main()
@@ -154,12 +165,20 @@ class Backtester:
     """
     Wrapper to call run_backtest and return total PnL for use in meta-optimization.
     """
+
     def __init__(self, strategy, candles):
         self.strategy = strategy
         self.candles = candles
 
     def run(self):
         # Use the strategy's warmup param if provided, else default to 0
-        warmup = getattr(self.strategy, "params", {}).get("warmup", 0)
+        warmup = getattr(
+            self.strategy,
+            "params",
+            {},
+        ).get("warmup", 0)
         stats = run_backtest(self.strategy, self.candles, warmup)
-        return stats.get("total_pnl", 0.0)
+        return stats.get(
+            "total_pnl",
+            0.0,
+        )

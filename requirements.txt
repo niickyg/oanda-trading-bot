@@ -1,0 +1,11 @@
+
+
+oandapyV20
+jinja2
+pytest
+flake8
+schedule
+python-dotenv
+ccxt
+backtrader
+streamlit
