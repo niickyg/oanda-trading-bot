@@ -21,3 +21,5 @@ per-file-ignores =
     config_manager.py: E302,E501,F841
     data/news.py: E302
     app.py: E501
+
+    manager.py:
