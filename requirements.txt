@@ -1,5 +1,3 @@
-
-
 oandapyV20
 jinja2
 pytest
@@ -9,3 +7,4 @@ python-dotenv
 ccxt
 backtrader
 streamlit
+pytest-timeout>=2.4.0
