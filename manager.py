@@ -82,4 +82,3 @@ if __name__ == "__main__":
     print("Manager starting; watching for changes in", CONFIG_FILE)
     for current_strats in watch_strategies():
         pass
-    

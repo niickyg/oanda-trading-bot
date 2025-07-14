@@ -22,4 +22,4 @@ per-file-ignores =
     data/news.py: E302
     app.py: E501
 
-    manager.py:
+    manager.py: 
