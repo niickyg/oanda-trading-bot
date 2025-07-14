@@ -18,6 +18,7 @@ import random
 from jinja2 import Environment, FileSystemLoader
 from pathlib import Path
 
+
 def parse_grid(grid_args):
     grid = {}
     for item in grid_args:
@@ -32,7 +33,11 @@ def main():
     parser.add_argument("--output-dir", default="strategy", help="Directory to write .py files")
     parser.add_argument("--mode", choices=["grid", "random"], default="grid",
                         help="Generation mode: grid or random sampling")
-    parser.add_argument("--grid", nargs="+", help="Grid definitions like ema_period=50,100 threshold=0.01,0.02")
+    parser.add_argument(
+        "--grid",
+        nargs="+",
+        help="Grid definitions like ema_period=50,100 threshold=0.01,0.02",
+    )
     parser.add_argument("--params", help="JSON file with base params to extend (for random mode)")
     parser.add_argument("--count", type=int, default=10,
                         help="Number of random strategies to generate (random mode)")
@@ -51,7 +56,10 @@ def main():
         keys, values = zip(*grid.items())
         for combo in itertools.product(*values):
             ctx = {
-                "strategy_name": f"Auto_{'_'.join(str(int(v) if isinstance(v, float) and v.is_integer() else str(v)) for v in combo)}",
+                "strategy_name": (
+                    f"Auto_{'_'.join(str(int(v) if isinstance(v, float) and v.is_integer() else str(v)) "
+                    f"for v in combo)}"
+                ),
                 "description": "Grid-generated strategy",
                 "default_ema": combo[keys.index('ema_period')] if 'ema_period' in keys else 50,
                 "params": []
@@ -70,8 +78,6 @@ def main():
         if args.params:
             base = json.loads(Path(args.params).read_text())
         for i in range(args.count):
-            ctx = base.copy()
-            name = f"Rnd_{i}"
             params = []
             for k, v in base.items():
                 if isinstance(v, (int, float)):
@@ -79,13 +85,21 @@ def main():
                     delta = v * 0.2
                     val = round(random.uniform(v - delta, v + delta), 6)
                     params.append({"name": k, "default": val, "doc": f"Randomized {k}"})
-            ctx = {"strategy_name": name, "description": "Randomized strategy", "params": params, "default_ema": base.get('ema_period', 50)}
+            name = f"Rnd_{i}"
+            ctx = {
+                "strategy_name": name,
+                "description": "Randomized strategy",
+                "params": params,
+                "default_ema": base.get('ema_period', 50),
+            }
             code = template.render(**ctx)
-            fname = output_dir / f"{name.lower()}.py"
+            fname = output_dir / f"{ctx['strategy_name'].lower()}.py"
             fname.write_text(code, encoding='utf-8')
             print(f"Generated {fname}")
 
 if __name__ == "__main__":
     main()
+
+
 # This script auto-generates strategy plugins based on a Jinja2 template.
-# It supports both grid-based generation and random sampling of parameters. 
+# It supports both grid-based generation and random sampling of parameters.

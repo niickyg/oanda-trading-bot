@@ -9,15 +9,6 @@ from collections import deque
 from datetime import datetime
 from requests.exceptions import ChunkedEncodingError
 
-import logging
-
-# Configure logging for live trading
-logging.basicConfig(
-    filename="live_trading.log",
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-)
-logger = logging.getLogger(__name__)
 
 from oandapyV20.endpoints.accounts import AccountSummary
 from broker import place_risk_managed_order
@@ -30,15 +21,24 @@ from data.core import (
 )
 from strategy.utils import sl_tp_levels
 
+# Configure logging for live trading
+import logging
+logging.basicConfig(
+    filename="live_trading.log",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 try:
-    from meta_optimize import run_meta_bandit
+    from meta_optimize import run_meta_bandit  # noqa: E402
 except ImportError:
     def run_meta_bandit(*args, **kwargs):
         """Stub for tests if meta_optimize missing."""
         pass
 
 try:
-    from strategy.plugins import get_enabled_strategies
+    from strategy.plugins import get_enabled_strategies  # noqa: E402
 except ImportError:
     def get_enabled_strategies():
         """Stub for tests if strategy.plugins missing."""
@@ -300,7 +300,7 @@ def handle_signal(pair: str, price: float, signal: str):
                     rounds=BANDIT_ROUNDS,
                 )
                 strategy_instances[:] = load_strategies()
-            except Exception as e:
+            except Exception:
                 logger.error("Live bandit optimization failed", exc_info=True)
         if drawdown_pct > 0.10:
             logger.error(f"Drawdown exceeded 10%: {drawdown_pct:.2%}")
@@ -309,7 +309,7 @@ def handle_signal(pair: str, price: float, signal: str):
         try:
             summary = API.request(AccountSummary(ACCOUNT))
             account_equity = float(summary["account"]["NAV"])
-        except Exception as e:
+        except Exception:
             logger.error("Equity fetch error", exc_info=True)
 
     # Base risk fraction

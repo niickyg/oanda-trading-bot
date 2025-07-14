@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      # 1 Checkout your code
+      - uses: actions/checkout@v3
+
+      # 2 Set up Python
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # 3 Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          # Assuming you have a requirements.txt at the root
+          pip install -r requirements.txt
+
+      # 4 Lint your code
+      - name: Lint with flake8
+        run: |
+          flake8 --config .flake8 .
+
+      # 5 Run unit tests
+      - name: Run pytest
+        run: pytest --maxfail=1 --disable-warnings -q
+
+      # 6 Run backtests on your core strategies
+      - name: Backtest core strategies
+        run: |
+          python backtest.py --strategy strategy/macd_tuner
+          python backtest.py --strategy strategy/tri_arb
+
+      # 7 Upload logs (optional)
+      - name: Upload backtest logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-logs
+          path: backtest.log

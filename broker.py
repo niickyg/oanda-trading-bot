@@ -91,8 +91,16 @@ def place_risk_managed_order(
         units = MAX_UNITS
 
     logger.debug(
-        "Risk-managed order for %s: side=%s, entry=%.5f, stop=%.5f, tp=%s, equity=%.2f, risk_pct=%.2f, units=%d",
-        instrument, side, price, stop_price, tp_price, equity, risk_pct, units
+        "Risk-managed order for %s: side=%s, entry=%.5f, stop=%.5f, tp=%s, "
+        " equity=%.2f, risk_pct=%.2f, units=%d",
+        instrument,
+        side,
+        price,
+        stop_price,
+        tp_price,
+        equity,
+        risk_pct,
+        units,
     )
 
     if side.upper() == "SELL":

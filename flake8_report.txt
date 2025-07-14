@@ -1,0 +1,29 @@
+./backtest.py:18:1: E402 module level import not at top of file
+./backtest.py:19:1: E402 module level import not at top of file
+./backtest.py:20:1: E402 module level import not at top of file
+./backtest.py:21:1: E402 module level import not at top of file
+./backtest.py:22:1: E402 module level import not at top of file
+./backtest.py:25:1: E402 module level import not at top of file
+./backtest.py:26:1: E402 module level import not at top of file
+./backtest.py:87:89: E501 line too long (107 > 88 characters)
+./backtest.py:148:1: E303 too many blank lines (3)
+./broker.py:94:89: E501 line too long (113 > 88 characters)
+./main.py:22:1: E402 module level import not at top of file
+./main.py:23:1: E402 module level import not at top of file
+./main.py:24:1: E402 module level import not at top of file
+./main.py:31:1: E402 module level import not at top of file
+./main.py:303:13: F841 local variable 'e' is assigned to but never used
+./main.py:312:9: F841 local variable 'e' is assigned to but never used
+./meta_optimize.py:17:1: E302 expected 2 blank lines, found 1
+./meta_optimize.py:26:1: E302 expected 2 blank lines, found 1
+./meta_optimize.py:37:1: E302 expected 2 blank lines, found 1
+./meta_optimize.py:60:1: E302 expected 2 blank lines, found 1
+./meta_optimize.py:107:1: E305 expected 2 blank lines after class or function definition, found 1
+./meta_optimize.py:111:23: W292 no newline at end of file
+./optimize.py:11:1: E402 module level import not at top of file
+./optimize.py:12:1: E402 module level import not at top of file
+./optimize.py:13:1: E402 module level import not at top of file
+./optimize.py:14:1: E402 module level import not at top of file
+./optimize.py:16:1: E402 module level import not at top of file
+./optimize.py:18:1: E402 module level import not at top of file
+./optimize.py:19:1: E402 module level import not at top of file
