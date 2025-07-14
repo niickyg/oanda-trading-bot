@@ -1,8 +1,11 @@
-
-
 import sys
 import os
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    not os.getenv("OANDA_TOKEN"),
+    reason="requires OANDA_TOKEN env var",
+)
 
 # Ensure project root is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
