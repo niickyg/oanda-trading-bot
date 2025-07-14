@@ -74,3 +74,12 @@ flake8 .
 
 # 24. Display active Python processes
 ps aux | grep python
+
+# 25. Build Docker image
+docker build -t oanda-bot:latest .
+
+# 26. Run container in detached mode
+docker-compose up --build -d
+
+# 27. Tail bot logs
+docker-compose logs -f bot

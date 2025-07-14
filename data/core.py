@@ -19,8 +19,11 @@ OANDA_ACCOUNT_ID = os.getenv("OANDA_ACCOUNT_ID")
 
 
 def _get_token() -> str:
-    token = os.getenv("OANDA_TOKEN", "")
-    if len(token.strip()) < 30:
+    token = os.getenv("OANDA_TOKEN", "").strip()
+    if len(token) < 30:
+        # In practice mode, allow running without a real token
+        if os.getenv("OANDA_ENV", "practice") == "practice":
+            return "DUMMY_TOKEN"
         raise RuntimeError(
             "OANDA_TOKEN is missing or looks too short.\n"
             "Set it in your environment or .env file."

@@ -1,4 +1,7 @@
-# main.py  –– high-frequency OANDA bot
+from dotenv import load_dotenv
+
+# Load environment variables from .env file, if present
+load_dotenv()
 import csv
 import importlib
 import json
@@ -8,9 +11,84 @@ import time
 from collections import deque
 from datetime import datetime
 from requests.exceptions import ChunkedEncodingError
+import requests
+
+# Error-reporting webhook (e.g., Slack or custom endpoint)
+ERROR_WEBHOOK_URL = os.getenv("ERROR_WEBHOOK_URL")
+
+def send_alert(message: str):
+    """Send alert on errors via webhook, if configured."""
+    if ERROR_WEBHOOK_URL:
+        try:
+            requests.post(ERROR_WEBHOOK_URL, json={"text": message}, timeout=5)
+        except Exception:
+            logger.warning("Failed to send error alert", exc_info=True)
 
 import pkgutil
 from strategy.base import BaseStrategy
+
+from threading import Thread
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+import signal
+import sys
+
+# ---------------------------------------------------------------------------
+# Logging (must be configured before any thread tries to use `logger`)
+# ---------------------------------------------------------------------------
+import logging
+import logging.handlers
+from pythonjsonlogger import jsonlogger
+
+handler = logging.handlers.RotatingFileHandler(
+    filename="live_trading.log",
+    maxBytes=10_000_000,
+    backupCount=5,
+)
+formatter = jsonlogger.JsonFormatter(
+    "%(asctime)s %(levelname)s %(name)s %(message)s"
+)
+handler.setFormatter(formatter)
+
+# Also log to stdout so crashes are visible when running locally
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+# ---------------------------------------------------------------------------
+
+def handle_exit(signum, frame):
+    logger.info(f"💀 Received signal {signum}, shutting down...")
+    sys.exit(0)
+
+# Register for SIGINT and SIGTERM
+signal.signal(signal.SIGINT, handle_exit)
+signal.signal(signal.SIGTERM, handle_exit)
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/health":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"OK")
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+def start_health_server():
+    try:
+        server = HTTPServer(("0.0.0.0", 8000), HealthHandler)
+        server.serve_forever()
+    except OSError as e:
+        logger.warning("Health server failed to start (port busy): %s", e)
+
+# Only start the health server if explicitly enabled (default ON in Docker, OFF for local dev)
+if os.getenv("ENABLE_HEALTH", "1") == "1":
+    Thread(target=start_health_server, daemon=True).start()
+else:
+    logger.info("Health server disabled via ENABLE_HEALTH=0")
 
 
 from oandapyV20.endpoints.accounts import AccountSummary
@@ -23,15 +101,6 @@ from data.core import (
     stream_bars,
 )
 from strategy.utils import sl_tp_levels
-
-# Configure logging for live trading
-import logging
-logging.basicConfig(
-    filename="live_trading.log",
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-)
-logger = logging.getLogger(__name__)
 
 try:
     from meta_optimize import run_meta_bandit  # noqa: E402
@@ -78,8 +147,9 @@ def load_strategies():
                 and issubclass(obj, BaseStrategy)
                 and obj is not BaseStrategy
             ):
-                # Instantiate with no explicit params
-                strategies.append(obj())
+                # Instantiate with empty config dict, avoid duplicates from aliases
+                if obj not in (type(s) for s in strategies):
+                    strategies.append(obj({}))
 
     print(f"[manager] Loaded strategies: {[s.name for s in strategies]}")
     return strategies
@@ -259,9 +329,6 @@ def handle_signal(pair: str, price: float, signal: str):
     """
     global last_order_ts, account_equity, last_equity_fetch, peak_equity, drawdown_pct
 
-    # Force the first equity refresh to run
-    global last_equity_fetch
-    last_equity_fetch = 0.0
 
     if not signal:
         logger.debug(f"{pair} | NO SIGNAL")
@@ -345,9 +412,21 @@ def handle_signal(pair: str, price: float, signal: str):
     units = int(order_tx["units"])
 
     session_hour = datetime.utcnow().hour
-    print(f"{pair} | {signal} @ {price:.5f} SL {sl} TP {tp} UNITS {units} → {order_id}")
+    logger.info(
+        "trade.executed",
+        extra={
+            "instrument": pair,
+            "side": signal,
+            "units": units,
+            "entry": price,
+            "stop_loss": float(sl),
+            "take_profit": float(tp),
+            "atr": atr,
+            "session_hour": session_hour,
+            "order_id": order_id,
+        },
+    )
     log_trade(pair, signal, units, order_id, price, sl, tp, atr, session_hour)
-
     last_order_ts = time.time()
 
 
@@ -377,6 +456,13 @@ def handle_bar(bar_close: dict):
             if sig:
                 signal = sig
                 break
+
+        # Optional: log signal generation with structured logging
+        if signal:
+            logger.debug(
+                "signal.generated",
+                extra={"instrument": pair, "signal": signal, "price": price},
+            )
 
         # Handle the signal for this pair
         handle_signal(pair, price, signal)
@@ -412,6 +498,7 @@ def bootstrap_history():
 # Main event loop
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    logger.info(f"🚀 Bot starting up in {os.getenv('MODE', 'paper')} mode")
     bootstrap_history()
     last_active_refresh = time.time()
     print(f"Streaming {BAR_SECONDS}-second bars … Ctrl-C to stop.")
@@ -427,6 +514,8 @@ if __name__ == "__main__":
                 handle_bar(bar)
         except KeyboardInterrupt:
             logger.info("Stopped by user. Closing profitable positions.")
+            logger.info("🏁 Bot exiting normally")
+            send_alert("Bot stopped by user via KeyboardInterrupt")
             break
         except ChunkedEncodingError:
             logger.warning("Stream dropped—reconnecting in 1s…", exc_info=True)
@@ -434,4 +523,6 @@ if __name__ == "__main__":
             continue
         except Exception:
             logger.exception("Unexpected error in main loop, shutting down.")
+            send_alert("Fatal error in main loop, check live_trading.log for details")
+            logger.info("🏁 Bot exiting normally")
             break

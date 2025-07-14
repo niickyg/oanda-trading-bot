@@ -11,15 +11,25 @@ import time
 from collections import deque
 from typing import Deque, Dict, Any
 import logging
+import logging.handlers
+from pythonjsonlogger import jsonlogger
 from data import get_candles
 from strategy.base import BaseStrategy
 
-logging.basicConfig(
+# Configure rotating log handler
+handler = logging.handlers.RotatingFileHandler(
     filename="backtest.log",
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)s %(message)s",
+    maxBytes=10_000_000,  # 10 MB
+    backupCount=5
 )
+formatter = jsonlogger.JsonFormatter(
+    "%(asctime)s %(levelname)s %(name)s %(message)s"
+)
+handler.setFormatter(formatter)
+
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
 
 
 def load_strategy(name: str, params: Dict[str, Any]) -> BaseStrategy:
@@ -47,6 +57,8 @@ def run_backtest(
     """
     Run backtest on candles (list of OANDA candle dicts). Returns summary metrics.
     """
+    start_time = time.perf_counter()
+
     wins = losses = trades = 0
     total_win = total_loss = 0.0
 
@@ -84,14 +96,16 @@ def run_backtest(
     total_pnl = total_win - total_loss
 
     logger.info(
-        "Backtest results - trades: %d, win_rate: %.2f%%, avg_win: %.5f, "
-        "avg_loss: %.5f, expectancy: %.5f",
-        trades,
-        win_rate * 100,
-        avg_win,
-        avg_loss,
-        expectancy,
+        "Backtest results",
+        trades=trades,
+        win_rate=win_rate,
+        avg_win=avg_win,
+        avg_loss=avg_loss,
+        expectancy=expectancy,
+        total_pnl=total_pnl,
     )
+    duration = time.perf_counter() - start_time
+    logger.info("run_backtest duration: %.2f seconds", duration)
 
     return {
         "trades": trades,

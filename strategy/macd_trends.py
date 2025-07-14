@@ -93,3 +93,5 @@ class MACDTrendStrategy(BaseStrategy):
     # Optional adaptive feedback (just forward to BaseStrategy default)
     # You can override update_trade_result here if you want strategy‑level
     # learning in addition to the global adaptive module.
+
+StrategyMACDTrend = MACDTrendStrategy

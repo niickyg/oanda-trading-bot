@@ -13,8 +13,11 @@ class StrategyTriArb(BaseStrategy):
     """
     name = "TriArb"
 
-    def __init__(self, **params):
-        super().__init__(**params)
+    def __init__(self, config):
+        # Store the provided configuration
+        self.config = config
+        # Initialize the base strategy with unpacked config
+        super().__init__(**config)
 
     def next_signal(self, bars: Sequence[dict]) -> Optional[str]:
         # No arbitrage logic yet; always return None (hold)
