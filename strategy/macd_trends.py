@@ -46,7 +46,7 @@ def _macd(arr: np.ndarray, fast: int, slow: int, sig: int) -> Tuple[np.ndarray, 
 # --------------------------------------------------------------------------- #
 # Strategy                                                                    #
 # --------------------------------------------------------------------------- #
-class StrategyMACDTrend(BaseStrategy):
+class MACDTrendStrategy(BaseStrategy):
     """MACD + EMA trend‑following strategy."""
 
     name = "MACDTrend"

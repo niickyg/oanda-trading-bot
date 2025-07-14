@@ -76,8 +76,8 @@ def load_strategies():
                 and issubclass(obj, BaseStrategy)
                 and obj is not BaseStrategy
             ):
-                # Instantiate with no explicit params; pass empty dict
-                strategies.append(obj({}))
+                # Instantiate with no explicit params
+                strategies.append(obj())
 
     print(f"[manager] Loaded strategies: {[s.name for s in strategies]}")
     return strategies
