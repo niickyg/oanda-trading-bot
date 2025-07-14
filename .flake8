@@ -20,3 +20,4 @@ per-file-ignores =
     meta_optimize.py: W292
     config_manager.py: E302,E501,F841
     data/news.py: E302
+    app.py: E501
