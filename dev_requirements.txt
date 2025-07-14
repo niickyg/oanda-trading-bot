@@ -1,0 +1,5 @@
+-r requirements.txt
+pytest
+pytest-timeout>=2.4.0
+flake8
+watchdog
