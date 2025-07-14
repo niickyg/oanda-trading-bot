@@ -34,7 +34,7 @@ jobs:
           pip install --upgrade pip
           # Assuming you have a requirements.txt at the root
           pip install -r requirements.txt
-          pip install pytest-timeout
+          pip install -r dev_requirements.txt
 
       # 4 Lint your code
       - name: Lint with flake8
