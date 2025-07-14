@@ -9,6 +9,10 @@ from collections import deque
 from datetime import datetime
 from requests.exceptions import ChunkedEncodingError
 
+import pkgutil
+import importlib
+from strategy.base import BaseStrategy
+
 
 from oandapyV20.endpoints.accounts import AccountSummary
 from broker import place_risk_managed_order
@@ -55,44 +59,47 @@ def load_config():
 
 
 def load_strategies():
-    """Instantiate strategy classes listed under 'enabled' in the config."""
-    cfg = load_config()
-    instances = []
-    for name in cfg.get("enabled", []):
-        params = cfg.get(name, {})
-        raw = name.lower()
-        # map strategy names to filenames
-        if raw == "macdtrend":
-            raw = "macd_trends"
-        elif raw == "rsireversion":
-            raw = "rsi_reversion"
-        module_name = f"strategy.{raw}"
-        try:
-            module = importlib.import_module(module_name)
-            cls = getattr(module, f"Strategy{name}")
-            instances.append(cls(params))
-        except Exception as e:
-            print(f"[manager] Error loading {name}: {e}")
-    return instances
-
-
-def watch_strategies():
     """
-    Generator yielding updated strategy lists whenever the config changes.
+    Auto‑discover and instantiate every BaseStrategy subclass inside
+    the *installed* ``strategy`` package, regardless of the current
+    working directory.
     """
-    last_mtime = None
+    import strategy as strategy_pkg  # import the package itself
+
     strategies = []
-    while True:
-        try:
-            mtime = os.path.getmtime(CONFIG_FILE)
-        except Exception:
-            mtime = None
-        if mtime != last_mtime:
-            strategies = load_strategies()
-            print("[manager] Loaded strategies:", [s.name for s in strategies])
-            last_mtime = mtime
-        time.sleep(POLL_INTERVAL)
-        yield strategies
+    # Walk through all sub‑modules inside strategy/
+    for _, module_name, _ in pkgutil.iter_modules(strategy_pkg.__path__, strategy_pkg.__name__ + "."):
+        module = importlib.import_module(module_name)
+        for obj in vars(module).values():
+            if (
+                isinstance(obj, type)
+                and issubclass(obj, BaseStrategy)
+                and obj is not BaseStrategy
+            ):
+                # Instantiate with no explicit params; pass empty dict
+                strategies.append(obj({}))
+
+    print(f"[manager] Loaded strategies: {[s.name for s in strategies]}")
+    return strategies
+
+
+# def watch_strategies():
+#     """
+#     Generator yielding updated strategy lists whenever the config changes.
+#     """
+#     last_mtime = None
+#     strategies = []
+#     while True:
+#         try:
+#             mtime = os.path.getmtime(CONFIG_FILE)
+#         except Exception:
+#             mtime = None
+#         if mtime != last_mtime:
+#             strategies = load_strategies()
+#             print("[manager] Loaded strategies:", [s.name for s in strategies])
+#             last_mtime = mtime
+#         time.sleep(POLL_INTERVAL)
+#         yield strategies
 
 
 # End inline manager
@@ -186,7 +193,7 @@ last_order_ts = 0.0  # epoch seconds
 
 # Load and watch for config changes to strategies
 strategy_instances = load_strategies()
-config_watcher = watch_strategies()
+# config_watcher = watch_strategies()
 
 
 # ---------------------------------------------------------------------------
@@ -350,10 +357,10 @@ def handle_bar(bar_close: dict):
             history[pair].append(price)
 
     # Check for updated strategy config
-    try:
-        strategy_instances[:] = next(config_watcher)
-    except StopIteration:
-        pass
+    # try:
+    #     strategy_instances[:] = next(config_watcher)
+    # except StopIteration:
+    #     pass
 
     # Evaluate and handle signals for each active pair
     for pair in list(ACTIVE_PAIRS):
