@@ -1,6 +1,16 @@
+# .flake8
 [flake8]
 max-line-length = 88
 
+# Skip virtualenv, git metadata, and any folders with third-party code
+exclude =
+    .venv/,
+    .git/,
+    __pycache__/,
+    build/,
+    dist/
+
+# Per-file ignores for your own code:
 per-file-ignores =
     backtest.py: E303,E305,E501
     broker.py: E302,E501
