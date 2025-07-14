@@ -1,15 +1,15 @@
-
-
 import json
 import pytest
 from pathlib import Path
 import research.run_research as rr
+
 
 @pytest.fixture(autouse=True)
 def isolate_cwd(tmp_path, monkeypatch):
     # Change working directory to tmp_path for tests
     monkeypatch.chdir(tmp_path)
     yield
+
 
 def test_meta_bandit_branch(monkeypatch):
     # Prepare config with meta_bandit enabled
@@ -19,10 +19,24 @@ def test_meta_bandit_branch(monkeypatch):
 
     # Stub out dependencies
     recorded = {}
-    monkeypatch.setattr(rr, "run_meta_bandit",
-                        lambda strategies, candles, rounds: recorded.setdefault("meta", (strategies, candles, rounds)))
-    monkeypatch.setattr(rr, "get_enabled_strategies", lambda: ["strategyA", "strategyB"])
-    monkeypatch.setattr(rr, "get_candles", lambda inst, tf, n: ["CANDLE_DATA"])
+    monkeypatch.setattr(
+        rr,
+        "run_meta_bandit",
+        lambda strategies, candles, rounds: recorded.setdefault(
+            "meta",
+            (strategies, candles, rounds),
+        ),
+    )
+    monkeypatch.setattr(
+        rr,
+        "get_enabled_strategies",
+        lambda: ["strategyA", "strategyB"],
+    )
+    monkeypatch.setattr(
+        rr,
+        "get_candles",
+        lambda inst, tf, n: ["CANDLE_DATA"],
+    )
 
     # Execute
     rr.main()
@@ -34,6 +48,7 @@ def test_meta_bandit_branch(monkeypatch):
     assert candles == ["CANDLE_DATA"]
     assert rounds == 3
 
+
 def test_grid_sweeper_fallback(monkeypatch):
     # Prepare config with meta_bandit disabled
     config = {"meta_bandit": False}
@@ -42,10 +57,26 @@ def test_grid_sweeper_fallback(monkeypatch):
 
     # Stub out dependencies
     calls = {}
-    monkeypatch.setattr(rr, "run_optimizer", lambda inst: calls.setdefault("grid", inst))
-    monkeypatch.setattr(rr, "load_best_params", lambda inst: {"paramX": 1})
-    monkeypatch.setattr(rr, "evaluate_strategies", lambda inst, params: {"winner": inst})
-    monkeypatch.setattr(rr, "update_live_config", lambda winners: calls.setdefault("update", winners))
+    monkeypatch.setattr(
+        rr,
+        "run_optimizer",
+        lambda inst: calls.setdefault("grid", inst),
+    )
+    monkeypatch.setattr(
+        rr,
+        "load_best_params",
+        lambda inst: {"paramX": 1},
+    )
+    monkeypatch.setattr(
+        rr,
+        "evaluate_strategies",
+        lambda inst, params: {"winner": inst},
+    )
+    monkeypatch.setattr(
+        rr,
+        "update_live_config",
+        lambda winners: calls.setdefault("update", winners),
+    )
 
     # Execute
     rr.main()
