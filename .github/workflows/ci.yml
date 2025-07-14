@@ -41,6 +41,9 @@ jobs:
         run: |
           flake8 --config .flake8 .
 
+      - name: Show pytest version & plugins
+        run: pytest --version
+
       # 5 Run unit tests
       - name: Run pytest
         env:
