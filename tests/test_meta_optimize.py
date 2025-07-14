@@ -1,6 +1,10 @@
+import pytest
+import os
+if not os.getenv("OANDA_TOKEN"):
+    pytest.skip("requires OANDA_TOKEN env var", allow_module_level=True)
+
 import math
 import json
-import pytest
 from pathlib import Path
 try:
     from backtest import Backtester
