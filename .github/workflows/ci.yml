@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt','**/dev_requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -50,8 +50,8 @@ jobs:
       # 5 Run unit tests
       - name: Run pytest
         env:
-          OANDA_TOKEN: 4f7d2e9b0c1A3E6F8G2H0J5K9L1M4N6P8Q2R3T4X
-        run: pytest -n auto --maxfail=1 --disable-warnings -q --durations=10 --timeout=30
+          OANDA_TOKEN: ${{ secrets.OANDA_TOKEN }}
+        run: pytest -n 2 -m "not slow" --maxfail=1 --disable-warnings -q --durations=10 --timeout=30
 
       # 6 Run backtests on your core strategies
       - name: Backtest core strategies

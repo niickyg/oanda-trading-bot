@@ -199,4 +199,3 @@ class Backtester:
             "total_pnl",
             0.0,
         )
-    
