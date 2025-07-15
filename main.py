@@ -1,9 +1,5 @@
-from dotenv import load_dotenv
 
-# Load environment variables from .env file, if present
-load_dotenv()
 import csv
-import importlib
 import json
 import os
 import itertools
@@ -12,9 +8,36 @@ from collections import deque
 from datetime import datetime
 from requests.exceptions import ChunkedEncodingError
 import requests
+import pkgutil
+import importlib
+from threading import Thread
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import signal
+import sys
+import logging
+import logging.handlers
+from pythonjsonlogger import jsonlogger
+
+from oandapyV20.endpoints.accounts import AccountSummary
+from broker import place_risk_managed_order
+from data.core import (
+    OANDA_ACCOUNT_ID as ACCOUNT,
+    api as API,
+    build_active_list,
+    get_candles,
+    stream_bars,
+)
+from strategy.base import BaseStrategy
+from strategy.utils import sl_tp_levels
+from dotenv import load_dotenv
+
+# Load environment variables from .env file, if present
+load_dotenv()
+
 
 # Error-reporting webhook (e.g., Slack or custom endpoint)
 ERROR_WEBHOOK_URL = os.getenv("ERROR_WEBHOOK_URL")
+
 
 def send_alert(message: str):
     """Send alert on errors via webhook, if configured."""
@@ -24,21 +47,10 @@ def send_alert(message: str):
         except Exception:
             logger.warning("Failed to send error alert", exc_info=True)
 
-import pkgutil
-from strategy.base import BaseStrategy
-
-from threading import Thread
-from http.server import BaseHTTPRequestHandler, HTTPServer
-
-import signal
-import sys
-
 # ---------------------------------------------------------------------------
 # Logging (must be configured before any thread tries to use `logger`)
 # ---------------------------------------------------------------------------
-import logging
-import logging.handlers
-from pythonjsonlogger import jsonlogger
+
 
 handler = logging.handlers.RotatingFileHandler(
     filename="live_trading.log",
@@ -54,20 +66,25 @@ handler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
+
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 # ---------------------------------------------------------------------------
 
+
 def handle_exit(signum, frame):
     logger.info(f"💀 Received signal {signum}, shutting down...")
     sys.exit(0)
+
 
 # Register for SIGINT and SIGTERM
 signal.signal(signal.SIGINT, handle_exit)
 signal.signal(signal.SIGTERM, handle_exit)
 
+
 class HealthHandler(BaseHTTPRequestHandler):
+
     def do_GET(self):
         if self.path == "/health":
             self.send_response(200)
@@ -77,6 +94,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+
 def start_health_server():
     try:
         server = HTTPServer(("0.0.0.0", 8000), HealthHandler)
@@ -84,23 +102,14 @@ def start_health_server():
     except OSError as e:
         logger.warning("Health server failed to start (port busy): %s", e)
 
-# Only start the health server if explicitly enabled (default ON in Docker, OFF for local dev)
+# Only start the health server if explicitly enabled
+# (default ON in Docker, OFF for local dev)
+
+
 if os.getenv("ENABLE_HEALTH", "1") == "1":
     Thread(target=start_health_server, daemon=True).start()
 else:
     logger.info("Health server disabled via ENABLE_HEALTH=0")
-
-
-from oandapyV20.endpoints.accounts import AccountSummary
-from broker import place_risk_managed_order
-from data.core import (
-    OANDA_ACCOUNT_ID as ACCOUNT,
-    api as API,
-    build_active_list,
-    get_candles,
-    stream_bars,
-)
-from strategy.utils import sl_tp_levels
 
 try:
     from meta_optimize import run_meta_bandit  # noqa: E402
@@ -135,7 +144,7 @@ def load_strategies():
     import strategy as strategy_pkg  # import the package itself
 
     strategies = []
-    seen: set[type] = set()
+    seen = set()
     # Walk through all sub‑modules inside strategy/
     for _, module_name, _ in pkgutil.iter_modules(
         strategy_pkg.__path__,
@@ -152,7 +161,8 @@ def load_strategies():
                     strategies.append(obj({}))
                     seen.add(obj)
 
-    print(f"[manager] Loaded strategies: {[s.name for s in strategies]}")
+    names = [s.name for s in strategies]
+    print(f"[manager] Loaded strategies: {names}")
     return strategies
 
 
