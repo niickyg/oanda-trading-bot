@@ -195,9 +195,7 @@ def load_strategies():
 # End inline manager
 
 
-
-
- # Load optimized parameters (handle missing file gracefully)
+# Load optimized parameters (handle missing file gracefully)
 _best = {}
 try:
     with open("best_params.json", "r") as _f:
@@ -208,8 +206,6 @@ except FileNotFoundError:
 
 BEST_SL_MULT = _best.get("sl_mult", 1.5)
 BEST_TP_MULT = _best.get("tp_mult", 2.0)
-
-
 
 
 # Allowed decimal precision per instrument
