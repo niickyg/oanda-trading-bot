@@ -94,7 +94,7 @@ jobs:
             python -m oanda_bot.research.run_research --latest-data
 
       - name: Upload live_params.json
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: live-params-${{ github.run_number }}
           path: live_params.json
