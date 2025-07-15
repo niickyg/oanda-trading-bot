@@ -33,7 +33,7 @@ else:
     # Stubs for import-time usage (e.g. pytest)
     ACCOUNT = None
     API = None
-    
+
     def build_active_list(pairs, top_k):
         return pairs
 
