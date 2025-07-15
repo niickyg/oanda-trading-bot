@@ -20,13 +20,22 @@ from pythonjsonlogger import jsonlogger
 
 from oandapyV20.endpoints.accounts import AccountSummary
 from broker import place_risk_managed_order
-from data.core import (
-    OANDA_ACCOUNT_ID as ACCOUNT,
-    api as API,
-    build_active_list,
-    get_candles,
-    stream_bars,
-)
+# Only pull in the live OANDA data core when running as the main script
+if __name__ == "__main__":
+    from data.core import (
+        OANDA_ACCOUNT_ID as ACCOUNT,
+        api as API,
+        build_active_list,
+        get_candles,
+        stream_bars,
+    )
+else:
+    # Stubs for import-time usage (e.g. pytest)
+    ACCOUNT = None
+    API = None
+    build_active_list = lambda pairs, top_k: pairs
+    get_candles = lambda *args, **kwargs: []
+    stream_bars = lambda *args, **kwargs: iter([])
 from strategy.base import BaseStrategy
 from strategy.utils import sl_tp_levels
 from dotenv import load_dotenv
