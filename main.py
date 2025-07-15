@@ -501,11 +501,15 @@ def bootstrap_history():
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     logger.info(f"🚀 Bot starting up in {os.getenv('MODE', 'paper')} mode")
-    # Start HTTP /health endpoint only in the main process
-    if os.getenv("ENABLE_HEALTH", "1") == "1":
-        Thread(target=start_health_server, daemon=True).start()
+    # In CI we never launch the health‑check server
+    if os.getenv("CI"):
+        logger.info("CI detected – skipping health server start")
     else:
-        logger.info("Health server disabled via ENABLE_HEALTH=0")
+        # Start HTTP /health endpoint only when running interactively
+        if os.getenv("ENABLE_HEALTH", "1") == "1":
+            Thread(target=start_health_server, daemon=True).start()
+        else:
+            logger.info("Health server disabled via ENABLE_HEALTH=0")
     bootstrap_history()
     last_active_refresh = time.time()
     print(f"Streaming {BAR_SECONDS}-second bars … Ctrl-C to stop.")
@@ -529,8 +533,6 @@ if __name__ == "__main__":
             logger.warning("Stream dropped—reconnecting in 1s…", exc_info=True)
             time.sleep(1)
             continue
-
-
         except Exception:
             logger.exception("Unexpected error in main loop, shutting down.")
             send_alert("Fatal error in main loop, check live_trading.log for details")
