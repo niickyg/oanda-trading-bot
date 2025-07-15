@@ -20,6 +20,7 @@ from pythonjsonlogger import jsonlogger
 
 from oandapyV20.endpoints.accounts import AccountSummary
 from broker import place_risk_managed_order
+import broker  # noqa: F401  # expose module for tests that patch main.broker
 # Only pull in the live OANDA data core when running as the main script
 if __name__ == "__main__":
     from data.core import (
