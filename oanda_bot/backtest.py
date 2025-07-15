@@ -44,7 +44,7 @@ def load_strategy(name: str, params: Dict[str, Any]) -> BaseStrategy:
         raw = "macd_trends"
     elif raw == "rsireversion":
         raw = "rsi_reversion"
-    module_name = f"strategy.{raw}"
+    module_name = f"oanda_bot.strategy.{raw}"
     module = __import__(module_name, fromlist=[f"Strategy{name}"])
     cls = getattr(module, f"Strategy{name}")
     logger.debug("Loaded strategy %s with params %s", name, params)
