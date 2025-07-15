@@ -176,6 +176,8 @@ if __name__ == "__main__":
 
 
 # For integration with meta-optimizer
+
+
 class Backtester:
     """
     Wrapper to call run_backtest and return total PnL for use in meta-optimization.
@@ -197,3 +199,4 @@ class Backtester:
             "total_pnl",
             0.0,
         )
+    

@@ -55,6 +55,7 @@ jobs:
 
       # 6 Run backtests on your core strategies
       - name: Backtest core strategies
+        if: github.event_name == 'schedule'
         run: |
           python backtest.py --strategy strategy/macd_tuner
           python backtest.py --strategy strategy/tri_arb
