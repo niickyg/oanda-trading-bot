@@ -19,7 +19,6 @@ import logging.handlers
 from pythonjsonlogger import jsonlogger
 
 from oandapyV20.endpoints.accounts import AccountSummary
-from broker import place_risk_managed_order
 import broker  # noqa: F401  # expose module for tests that patch main.broker
 # Only pull in the live OANDA data core when running as the main script
 if __name__ == "__main__":
@@ -416,7 +415,7 @@ def handle_signal(pair: str, price: float, signal: str):
         risk_frac *= 0.5
 
     # Place order
-    resp = place_risk_managed_order(
+    resp = broker.place_risk_managed_order(
         instrument=pair,
         side=signal,
         price=price,
