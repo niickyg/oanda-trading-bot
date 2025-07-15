@@ -195,14 +195,21 @@ def load_strategies():
 # End inline manager
 
 
-# Load optimized parameters (handle missing keys gracefully)
-with open("best_params.json", "r") as _f:
-    _best = json.load(_f)
 
-# BEST_FAST    = _best.get("fast")        # no longer used
-# BEST_SLOW    = _best.get("slow")        # no longer used
-BEST_SL_MULT = _best.get("sl_mult", 1.5)  # sensible fallback
+
+ # Load optimized parameters (handle missing file gracefully)
+_best = {}
+try:
+    with open("best_params.json", "r") as _f:
+        _best = json.load(_f)
+except FileNotFoundError:
+    # Tests or CI may not provide best_params.json
+    pass
+
+BEST_SL_MULT = _best.get("sl_mult", 1.5)
 BEST_TP_MULT = _best.get("tp_mult", 2.0)
+
+
 
 
 # Allowed decimal precision per instrument
