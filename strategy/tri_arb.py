@@ -3,7 +3,7 @@ strategy/tri_arb.py
 
 Stub triangular arbitrage strategy for backtesting.
 """
-from typing import Sequence, Any
+from typing import Sequence, Any, Dict, Optional
 from strategy.base import BaseStrategy
 
 
@@ -15,7 +15,7 @@ class StrategyTriArb(BaseStrategy):
 
     name = "TriArb"
 
-    def __init__(self, config: dict[str, Any] | None = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         # Store provided configuration (may be empty)
         self.config = config or {}
         super().__init__(**self.config)
