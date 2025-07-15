@@ -15,7 +15,7 @@ class StrategyTriArb(BaseStrategy):
 
     name = "TriArb"
 
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: Optional[dict] = None):
         # Store provided configuration (may be empty)
         self.config = config or {}
         super().__init__(**self.config)
