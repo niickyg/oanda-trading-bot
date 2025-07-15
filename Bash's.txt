@@ -83,3 +83,46 @@ docker-compose up --build -d
 
 # 27. Tail bot logs
 docker-compose logs -f bot
+
+# 28. Rebuild image and run optimiser in one go
+docker stop research 2>/dev/null || true && \
+docker build -t oanda-bot . && \
+docker run --rm -it --name research \
+  -v "$(pwd)":/app \
+  oanda-bot \
+  python -m oanda_bot.optimize \
+    --strategy MACDTrend \
+    --instruments EUR_USD \
+    --granularity H1 \
+    --count 4999
+
+# 29. Helper script to automate the above (save as run_opt.sh)
+cat <<'EOS' > run_opt.sh
+#!/usr/bin/env bash
+set -euo pipefail
+IMAGE=oanda-bot
+CONTAINER=research
+STRAT=MACDTrend
+INSTR="EUR_USD"
+GRAN=H1
+COUNT=4999
+
+echo "▶ Stopping old container (if any)…"
+docker stop "$CONTAINER" 2>/dev/null || true
+
+echo "▶ Rebuilding $IMAGE from Dockerfile…"
+docker build -t oanda-bot .
+
+echo "▶ Launching optimiser in $CONTAINER…"
+docker run --rm -it \
+  --name research \
+  -v "$(pwd)":/app \
+  oanda-bot \
+  python -m oanda_bot.optimize \
+    --strategy MACDTrend \
+    --instruments EUR_USD \
+    --granularity H1 \
+    --count 4999
+
+chmod +x run_opt.sh
+./run_opt.sh

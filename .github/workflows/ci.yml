@@ -70,4 +70,30 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backtest-logs
-          path: backtest.log
+
+  research:
+    name: 🔬 Research
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Build Docker image (dev stage)
+        run: |
+          docker build \
+            --target dev \
+            -t oanda-bot-dev .
+
+      - name: Run research
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/app" \
+            oanda-bot-dev \
+            python -m oanda_bot.research.run_research --latest-data
+
+      - name: Upload live_params.json
+        uses: actions/upload-artifact@v3
+        with:
+          name: live-params-${{ github.run_number }}
+          path: live_params.json

@@ -1,7 +1,11 @@
 {
   "sl_mult": 0.5,
   "tp_mult": 0.5,
-  "trades": 185,
-  "win_rate": 0.4918918918918919,
-  "expectancy": 3.529729729730071e-05
+  "max_duration": 10,
+  "trail_atr": 0.5,
+  "trades": 188,
+  "win_rate": 0.5053191489361702,
+  "expectancy": 7.872340425532117e-05,
+  "sharpe": null,
+  "drawdown": null
 }

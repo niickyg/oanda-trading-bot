@@ -1,9 +1,9 @@
-
 services:
   bot:
     build:
       context: .
       dockerfile: Dockerfile
+      target: dev
     image: oanda-bot:latest
     env_file:
       - .env
@@ -15,3 +15,18 @@ services:
       timeout: 5s
       retries: 3
     restart: unless-stopped
+  research:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    image: oanda-bot:dev
+    env_file:
+      - .env
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    command: >
+      python -m oanda_bot.research.run_research --latest-data
+    volumes:
+      - ./:/app

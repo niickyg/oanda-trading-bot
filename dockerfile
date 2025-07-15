@@ -1,17 +1,19 @@
 # Base image for runtime
-FROM python:3.9-slim as base
+FROM python:3.9.18-slim AS base
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Development stage with dev dependencies
-FROM base as dev
+FROM base AS dev
 COPY dev_requirements.txt .
 RUN pip install --no-cache-dir -r dev_requirements.txt
+COPY setup.py .
+RUN pip install --no-cache-dir -e .
 COPY . .
 
 # Production stage
-FROM base as prod
+FROM base AS prod
 COPY . .
 
 # Healthcheck for container orchestrators
