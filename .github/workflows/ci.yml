@@ -52,7 +52,10 @@ jobs:
         timeout-minutes: 5
         env:
           OANDA_TOKEN: ${{ secrets.OANDA_TOKEN }}
-        run: pytest -n 2 -m "not slow" --maxfail=1 --disable-warnings -q --durations=10 --timeout=30
+        run: |
+          echo "START PYTEST: $(date +'%Y-%m-%d %H:%M:%S')"
+          pytest -n 2 -m "not slow" -vv --durations=10 --timeout=30 --setup-show --capture=no
+          echo "END PYTEST:   $(date +'%Y-%m-%d %H:%M:%S')"
 
       # 6 Run backtests on your core strategies
       - name: Backtest core strategies
