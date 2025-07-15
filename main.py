@@ -33,9 +33,14 @@ else:
     # Stubs for import-time usage (e.g. pytest)
     ACCOUNT = None
     API = None
-    build_active_list = lambda pairs, top_k: pairs
-    get_candles = lambda *args, **kwargs: []
-    stream_bars = lambda *args, **kwargs: iter([])
+    def build_active_list(pairs, top_k):
+        return pairs
+
+    def get_candles(*args, **kwargs):
+        return []
+
+    def stream_bars(*args, **kwargs):
+        return iter([])
 from strategy.base import BaseStrategy
 from strategy.utils import sl_tp_levels
 from dotenv import load_dotenv
