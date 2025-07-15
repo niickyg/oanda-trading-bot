@@ -1,17 +1,19 @@
 from __future__ import annotations
 from typing import Sequence, Optional, Tuple
 import numpy as np
-
 import logging
+from .base import BaseStrategy
 
 logger = logging.getLogger(__name__)
-
-from .base import BaseStrategy
 
 # --------------------------------------------------------------------------- #
 # Helper functions (pure NumPy, no pandas)                                    #
 # --------------------------------------------------------------------------- #
-def _ema_series(arr: np.ndarray, span: int) -> np.ndarray:
+
+
+def _ema_series(
+    arr: np.ndarray, span: int
+) -> np.ndarray:
     """Return full EMA series (single-pass, no pandas)."""
     alpha = 2.0 / (span + 1)
     ema = np.empty_like(arr)
@@ -20,9 +22,15 @@ def _ema_series(arr: np.ndarray, span: int) -> np.ndarray:
         ema[i] = alpha * arr[i] + (1 - alpha) * ema[i - 1]
     return ema
 
-def _macd(arr: np.ndarray, fast: int, slow: int, sig: int) -> Tuple[np.ndarray, np.ndarray]:
+
+def _macd(
+    arr: np.ndarray,
+    fast: int,
+    slow: int,
+    sig: int,
+) -> Tuple[np.ndarray, np.ndarray]:
     macd_line = _ema_series(arr, fast) - _ema_series(arr, slow)
-    sig_line  = _ema_series(macd_line, sig)
+    sig_line = _ema_series(macd_line, sig)
     return macd_line, sig_line
 
 # --------------------------------------------------------------------------- #
@@ -37,6 +45,7 @@ class MACDTrendStrategy(BaseStrategy):
         super().__init__(params or {})
         # Helpful trace to make sure optimiser values get here
         logger.debug("STRATEGY INIT — params = %s", self.params)
+
 
     def next_signal(self, bars: Sequence[dict]) -> Optional[str]:
         # Extract close prices: bars may be raw floats or OANDA candle dicts
@@ -57,7 +66,7 @@ class MACDTrendStrategy(BaseStrategy):
         # Parameters (fallback to defaults)
         fast = self.params.get("macd_fast", 12)
         slow = self.params.get("macd_slow", 26)
-        sig  = self.params.get("macd_sig", 9)
+        sig = self.params.get("macd_sig", 9)
 
         # Compute indicators
         ema_trend = _ema_series(closes, trend_len)[-1]
@@ -77,7 +86,9 @@ class MACDTrendStrategy(BaseStrategy):
 
         return None
 
+
 StrategyMACDTrend = MACDTrendStrategy
+
 
 # Convenience function to generate entry/exit signals using MACDTrendStrategy
 def generate_signal(bars, params=None):
@@ -87,14 +98,17 @@ def generate_signal(bars, params=None):
     strategy = MACDTrendStrategy(params or {})
     return strategy.next_signal(bars)
 
+
 # Stub for compute_atr (to be implemented)
 def compute_atr(bars, period: int = 14) -> float:
     """
     Return the latest Average True Range (ATR) over the given bars.
 
     Bars may be either:
-    • plain floats (close prices) – in which case ATR is undefined and we return 0
-    • OANDA candle dicts with ["mid"]["h"], ["mid"]["l"], ["mid"]["c"] keys.
+    • plain floats (close prices) –
+      in which case ATR is undefined and we return 0
+    • OANDA candle dicts with ["mid"]["h"], ["mid"]["l"],
+      ["mid"]["c"] keys.
     """
     if len(bars) < period + 1:
         return 0.0
@@ -104,9 +118,9 @@ def compute_atr(bars, period: int = 14) -> float:
         # Cannot compute ATR with only closes
         return 0.0
 
-    highs = np.array([float(b["mid"]["h"]) for b in bars[-period - 1 :]], dtype=np.float64)
-    lows  = np.array([float(b["mid"]["l"]) for b in bars[-period - 1 :]], dtype=np.float64)
-    closes_prev = np.array([float(b["mid"]["c"]) for b in bars[-period - 1 :]], dtype=np.float64)
+    highs = np.array([float(b["mid"]["h"]) for b in bars[-period - 1:]], dtype=np.float64)
+    lows = np.array([float(b["mid"]["l"]) for b in bars[-period - 1:]], dtype=np.float64)
+    closes_prev = np.array([float(b["mid"]["c"]) for b in bars[-period - 1:]], dtype=np.float64)
 
     # True range: max( high - low,
     #                  abs(high - prev_close),
@@ -121,6 +135,7 @@ def compute_atr(bars, period: int = 14) -> float:
 
     return float(tr.mean())
 
+
 # Stub for sl_tp_levels (to be implemented)
 def sl_tp_levels(bars, side: str, params=None):
     """
@@ -131,15 +146,25 @@ def sl_tp_levels(bars, side: str, params=None):
     """
     params = params or {}
     atr_period = params.get("atr_period", 14)
-    sl_mult    = params.get("sl_mult", 1.0)
-    tp_mult    = params.get("tp_mult", 1.0)
+    sl_mult = params.get("sl_mult", 1.0)
+    tp_mult = params.get("tp_mult", 1.0)
 
-    price = float(bars[-1]["mid"]["c"]) if not isinstance(bars[-1], (int, float, np.floating)) else float(bars[-1])
-    atr   = compute_atr(bars, period=atr_period)
+    price = (
+        float(bars[-1]["mid"]["c"])
+        if not isinstance(bars[-1], (int, float, np.floating))
+        else float(bars[-1])
+    )
+    atr = compute_atr(bars, period=atr_period)
 
     if side == "BUY":
-        return price - sl_mult * atr, price + tp_mult * atr
+        return (
+            price - sl_mult * atr,
+            price + tp_mult * atr,
+        )
     elif side == "SELL":
-        return price + sl_mult * atr, price - tp_mult * atr
+        return (
+            price + sl_mult * atr,
+            price - tp_mult * atr,
+        )
     else:
         raise ValueError("side must be 'BUY' or 'SELL'")

@@ -2,6 +2,7 @@ import glob
 import importlib
 import pytest
 
+
 @pytest.mark.parametrize("modpath", glob.glob("strategy/*.py"))
 def test_import_and_smoke(modpath):
     # Build module name and import it

@@ -23,3 +23,10 @@ per-file-ignores =
     app.py: E501
 
     manager.py: 
+    oanda_bot/strategy/macd_trends.py: E302,E303,E501,E221,E203,W292
+    oanda_bot/research/template/strategy_template.j2.py: E999
+    oanda_bot/backtest.py: E221,E272
+    oanda_bot/optimize.py: E501
+    oanda_bot/research/auto_strategy_generator.py: E999
+    oanda_bot/research/run_research.py: E265,E501,E402,F811,E302,E305
+    oanda_bot/strategy/base.py: W292

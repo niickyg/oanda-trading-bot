@@ -1,5 +1,3 @@
-
-
 import json
 import time
 from pathlib import Path
@@ -10,15 +8,18 @@ import os
 # Adjust import to your module path if needed
 from config_manager import ConfigManager, CONFIG_PATH
 
+
 @pytest.fixture(autouse=True)
 def isolate_tmp(tmp_path, monkeypatch):
     # Ensure each test runs in its own temp dir
     monkeypatch.chdir(tmp_path)
     yield
 
+
 def write_config(data):
     # Helper to write JSON to the config file path
     Path(CONFIG_PATH).write_text(json.dumps(data))
+
 
 def test_initial_load_and_callback(monkeypatch):
     # Write initial config
@@ -33,6 +34,7 @@ def test_initial_load_and_callback(monkeypatch):
     cm.stop()
 
     assert seen == [initial]
+
 
 @pytest.mark.skipif(os.getenv("CI") is not None, reason="FS events unreliable on CI")
 def test_hot_reload_triggers_callback(monkeypatch):
@@ -49,6 +51,7 @@ def test_hot_reload_triggers_callback(monkeypatch):
     cm.stop()
 
     assert seen == [{"step": 1}, {"step": 2}]
+
 
 def test_no_callback_if_no_change(monkeypatch):
     write_config({"value": 10})

@@ -146,7 +146,9 @@ def run_backtest(
     total_pnl_pips = total_pnl / pip_size
 
     logger.info(
-        "Backtest results: trades=%d, win_rate=%.2f, avg_win=%.5f, avg_loss=%.5f, expectancy=%.5f, total_pnl=%.4f, total_pips=%.1f",
+        "Backtest results: trades=%d, win_rate=%.2f, avg_win=%.5f, "
+        "avg_loss=%.5f, expectancy=%.5f, total_pnl=%.4f, "
+        "total_pips=%.1f",
         trades, win_rate, avg_win, avg_loss, expectancy, total_pnl, total_pnl_pips
     )
     duration = time.perf_counter() - start_time

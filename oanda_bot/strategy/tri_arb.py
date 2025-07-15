@@ -6,6 +6,7 @@ Stub triangular arbitrage strategy for backtesting.
 from typing import Sequence, Any, Dict, Optional
 from .base import BaseStrategy
 
+
 class StrategyTriArb(BaseStrategy):
     """
     Minimal triangular arbitrage strategy stub: always holds,

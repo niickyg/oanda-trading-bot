@@ -1,13 +1,10 @@
-import pytest
-
-import math
 import json
-from pathlib import Path
 try:
     from backtest import Backtester
 except ImportError:
     Backtester = None
 import meta_optimize as mo
+
 
 class DummyStrategy:
     def __init__(self, name):
@@ -20,35 +17,47 @@ class DummyStrategy:
         self.pull_count += 1
         self.cumulative_pnl += pnl
 
+
 def test_select_strategy_ucb_prefers_unpulled():
     s1 = DummyStrategy("A")
     s2 = DummyStrategy("B")
     s1.pull_count = 0
-    s2.pull_count = 1; s2.cumulative_pnl = 10.0
+    s2.pull_count = 1
+    s2.cumulative_pnl = 10.0
     chosen = mo.select_strategy_ucb([s1, s2], total_pulls=1)
     assert chosen is s1
+
 
 def test_select_strategy_ucb_scores_correctly():
     s1 = DummyStrategy("A")
     s2 = DummyStrategy("B")
     # both have pulls, but B has higher average pnl
-    s1.pull_count = 2; s1.cumulative_pnl = 2.0   # avg=1.0
-    s2.pull_count = 2; s2.cumulative_pnl = 6.0   # avg=3.0
+    s1.pull_count = 2
+    s1.cumulative_pnl = 2.0   # avg=1.0
+
+    s2.pull_count = 2
+    s2.cumulative_pnl = 6.0   # avg=3.0
     # total_pulls doesn't affect order when bonus equal
     chosen = mo.select_strategy_ucb([s1, s2], total_pulls=4)
     assert chosen is s2
+
 
 def test_run_main_writes_live_config(tmp_path, monkeypatch):
     # Monkeypatch strategies and backtester to produce known pnls
     s1 = DummyStrategy("A")
     s2 = DummyStrategy("B")
     monkeypatch.setattr(mo, "get_enabled_strategies", lambda: [s1, s2])
+
     class StubBT:
+
         def __init__(self, strat, data): pass
+
         def run(self):
             # return different pnl for each strategy
             return 5.0 if hasattr(self, 'strat') and self.strat.name == "A" else 3.0
+
     # ensure stub receives strat attribute
+
     def stub_init(self, strat, data):
         self.strat = strat
     monkeypatch.setattr(StubBT, "__init__", stub_init)

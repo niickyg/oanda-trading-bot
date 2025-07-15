@@ -19,6 +19,7 @@ PARAMS = {
     "macd_sig": 9,
 }
 
+
 # ---------------------------------------------------------------------------
 # Adaptive performance update
 # ---------------------------------------------------------------------------
@@ -48,8 +49,9 @@ def update_strategy_performance(trade_won: bool):
         PARAMS["macd_fast"] = min(20, PARAMS["macd_fast"] + 2)
 
     PARAMS["macd_slow"] = PARAMS["macd_fast"] + 8
-    PARAMS["macd_sig"]  =  max(6, int(PARAMS["macd_fast"] / 2))
+    PARAMS["macd_sig"] = max(6, int(PARAMS["macd_fast"] / 2))
     PARAMS["ema_trend"] = PARAMS["macd_slow"] * 8
+
 
 def _parse_iso(ts: str) -> _dt.datetime:
     """
@@ -62,6 +64,7 @@ def _parse_iso(ts: str) -> _dt.datetime:
         frac, tz = rest.split("+", 1)
         ts = f"{main}.{frac[:6]}+{tz}"
     return _dt.datetime.fromisoformat(ts)
+
 
 def breakout_signal(
     candles: Sequence[dict],
@@ -91,7 +94,7 @@ def breakout_signal(
 
     # Define London session windows (UTC)
     pre_start = _dt.time(7, 15)   # 07:15–07:45 gather range
-    pre_end   = _dt.time(7, 45)
+    pre_end = _dt.time(7, 45)
     trade_end = _dt.time(10, 0)   # invalidate breakout after 10:00
 
     # 1) Build the pre-open range
@@ -104,7 +107,7 @@ def breakout_signal(
         return None
 
     high = max(float(c["mid"]["h"]) for c in day_candles)
-    low  = min(float(c["mid"]["l"]) for c in day_candles)
+    low = min(float(c["mid"]["l"]) for c in day_candles)
 
     # 2) During the range-building window: no trade
     if ts.time() <= pre_end:
@@ -113,14 +116,13 @@ def breakout_signal(
     # 3) Between 07:45 and 10:00 → check breakout
     if pre_end < ts.time() <= trade_end:
         last_high = float(last["mid"]["h"])
-        last_low  = float(last["mid"]["l"])
+        last_low = float(last["mid"]["l"])
         if last_high > high + buffer:
             return "BUY"
-        if last_low  < low  - buffer:
+        if last_low < low - buffer:
             return "SELL"
 
     return None
-
 
 
 def _ema_last(arr: np.ndarray, span: int) -> float:
@@ -134,6 +136,7 @@ def _ema_last(arr: np.ndarray, span: int) -> float:
         ema = alpha * v + (1 - alpha) * ema
     return ema
 
+
 def _ema_series(arr: np.ndarray, span: int) -> np.ndarray:
     """Full EMA series (numpy single‑pass)."""
     alpha = 2.0 / (span + 1)
@@ -143,11 +146,13 @@ def _ema_series(arr: np.ndarray, span: int) -> np.ndarray:
         ema[i] = alpha * arr[i] + (1 - alpha) * ema[i - 1]
     return ema
 
+
 def _macd(arr: np.ndarray, fast=12, slow=26, sig=9) -> Tuple[np.ndarray, np.ndarray]:
     """MACD (fast‑slow EMA) and signal line."""
-    macd_line  = _ema_series(arr, fast) - _ema_series(arr, slow)
+    macd_line = _ema_series(arr, fast) - _ema_series(arr, slow)
     signal_line = _ema_series(macd_line, sig)
     return macd_line, signal_line
+
 
 def generate_signal(prices: Sequence[float]) -> Optional[str]:
     """
@@ -189,6 +194,7 @@ def generate_signal(prices: Sequence[float]) -> Optional[str]:
 # Risk‑management helpers
 # ---------------------------------------------------------------------------
 
+
 def compute_atr(candles: Sequence[dict], period: int = 14) -> float:
     """
     Simple Average True Range (ATR).
@@ -205,16 +211,16 @@ def compute_atr(candles: Sequence[dict], period: int = 14) -> float:
     if len(candles) < period + 1:
         return 0.0
 
-    highs   = [float(c["mid"]["h"]) for c in candles[-(period + 1):]]
-    lows    = [float(c["mid"]["l"]) for c in candles[-(period + 1):]]
-    closes  = [float(c["mid"]["c"]) for c in candles[-(period + 1):]]
+    highs = [float(c["mid"]["h"]) for c in candles[-(period + 1):]]
+    lows = [float(c["mid"]["l"]) for c in candles[-(period + 1):]]
+    closes = [float(c["mid"]["c"]) for c in candles[-(period + 1):]]
 
     tr_vals = []
     for i in range(1, len(highs)):
         tr = max(
             highs[i] - lows[i],
             abs(highs[i] - closes[i - 1]),
-            abs(lows[i]  - closes[i - 1]),
+            abs(lows[i] - closes[i - 1]),
         )
         tr_vals.append(tr)
 

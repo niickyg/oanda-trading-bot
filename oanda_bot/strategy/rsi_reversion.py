@@ -29,7 +29,7 @@ from .base import BaseStrategy
 def _rsi(arr: np.ndarray, length: int = 14) -> np.ndarray:
     """Return RSI series (numpy)."""
     delta = np.diff(arr)
-    up   = np.maximum(delta, 0.0)
+    up = np.maximum(delta, 0.0)
     down = np.maximum(-delta, 0.0)
 
     # Wilder's smoothing
@@ -106,7 +106,7 @@ class StrategyRSIReversion(BaseStrategy):
 
     def update_trade_result(self, win: bool, pnl: float) -> None:
         """
-        Simple adaptive tweak: if rolling win-rate < 40%, widen RSI bands by 2; 
+        Simple adaptive tweak: if rolling win-rate < 40%, widen RSI bands by 2;
         if rolling win-rate > 65%, narrow bands by 2.
         """
         history = self.params.setdefault("_hist", [])
@@ -122,4 +122,4 @@ class StrategyRSIReversion(BaseStrategy):
                 self.params["oversold"] -= 2
             elif win_rate > 0.65:
                 self.params["overbought"] = max(55, self.params["overbought"] - 2)
-                self.params["oversold"]   = min(45, self.params["oversold"] + 2)
+                self.params["oversold"] = min(45, self.params["oversold"] + 2)

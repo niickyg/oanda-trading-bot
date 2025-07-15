@@ -1,5 +1,3 @@
-
-
 """
 macd_tuner.py
 
@@ -10,13 +8,16 @@ import argparse
 from strategy.macd_trends import MACDTrendStrategy
 from backtest import Backtester as Backtest
 
+
 def tune_macd(fast_periods, slow_periods, signal_periods, **bt_kwargs):
     """
     Runs backtests over all combinations of provided MACD parameters.
     Returns the best-performing parameter set by Sharpe ratio.
     """
     best = None
-    for fast, slow, signal in itertools.product(fast_periods, slow_periods, signal_periods):
+    for fast, slow, signal in itertools.product(
+        fast_periods, slow_periods, signal_periods
+    ):
         if fast >= slow:
             continue  # skip invalid combos
         strat = MACDTrendStrategy(
@@ -33,9 +34,14 @@ def tune_macd(fast_periods, slow_periods, signal_periods, **bt_kwargs):
                 "slow_period": slow,
                 "signal_period": signal,
                 "sharpe": sharpe,
-                **{k: stats[k] for k in stats if k != "sharpe_ratio" and k != "sharpe"}
+                **{
+                    k: stats[k]
+                    for k in stats
+                    if k != "sharpe_ratio" and k != "sharpe"
+                },
             }
     return best
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Tune MACD strategy parameters")
@@ -60,6 +66,7 @@ def parse_args():
         help="Backtest end date (YYYY-MM-DD)"
     )
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     args = parse_args()
