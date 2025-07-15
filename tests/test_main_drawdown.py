@@ -8,11 +8,13 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import main
 
 @pytest.fixture(autouse=True)
-def reset_globals():
+def reset_globals(monkeypatch):
     # Reset globals before each test
     main.peak_equity = 0.0
     main.account_equity = 0.0
     main.strategy_instances = []
+    # Stub out the real OANDA API call
+    monkeypatch.setattr(main.broker, "place_risk_managed_order", lambda *args, **kwargs: {"orderFillTransaction": {"orderID": "TEST"}})
     yield
 
 def test_handle_signal_triggers_meta_bandit(monkeypatch):
@@ -24,11 +26,6 @@ def test_handle_signal_triggers_meta_bandit(monkeypatch):
         recorded["meta"] = (strategies, candles, rounds)
     monkeypatch.setattr(main, "run_meta_bandit", fake_run_meta)
     monkeypatch.setattr(main, "load_strategies", lambda: ["new"])
-    monkeypatch.setattr(
-        main,
-        "place_risk_managed_order",
-        lambda *args, **kwargs: {"orderFillTransaction": {"orderID": "TEST"}}
-    )
     # Set globals to simulate drawdown > threshold
     main.peak_equity = 1000.0
     main.account_equity = 900.0  # 10% drawdown triggers threshold
@@ -47,11 +44,6 @@ def test_handle_signal_triggers_meta_bandit(monkeypatch):
 def test_handle_signal_no_trigger_below_threshold(monkeypatch):
     called = {}
     monkeypatch.setattr(main, "run_meta_bandit", lambda *args, **kwargs: called.setdefault("meta", True))
-    monkeypatch.setattr(
-        main,
-        "place_risk_managed_order",
-        lambda *args, **kwargs: {"orderFillTransaction": {"orderID": "TEST"}}
-    )
     # Set globals to simulate drawdown below threshold
     main.peak_equity = 1000.0
     main.account_equity = 980.0  # 2% drawdown < threshold

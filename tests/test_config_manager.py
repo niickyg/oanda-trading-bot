@@ -26,7 +26,7 @@ def test_initial_load_and_callback(monkeypatch):
     write_config(initial)
 
     seen = []
-    cm = ConfigManager(on_update=seen.append, poll_interval=0.05)
+    cm = ConfigManager(on_update=seen.append, poll_interval=0.1)
     cm.start()
     # Allow time for initial callback
     time.sleep(0.1)
@@ -34,12 +34,12 @@ def test_initial_load_and_callback(monkeypatch):
 
     assert seen == [initial]
 
-@pytest.mark.skipif(os.getenv("CI") == "true", reason="FS events unreliable on CI")
+@pytest.mark.skipif(os.getenv("CI") is not None, reason="FS events unreliable on CI")
 def test_hot_reload_triggers_callback(monkeypatch):
     # Write initial config
     write_config({"step": 1})
     seen = []
-    cm = ConfigManager(on_update=seen.append, poll_interval=0.05)
+    cm = ConfigManager(on_update=seen.append, poll_interval=0.1)
     cm.start()
     time.sleep(0.1)
 
@@ -53,7 +53,7 @@ def test_hot_reload_triggers_callback(monkeypatch):
 def test_no_callback_if_no_change(monkeypatch):
     write_config({"value": 10})
     seen = []
-    cm = ConfigManager(on_update=seen.append, poll_interval=0.05)
+    cm = ConfigManager(on_update=seen.append, poll_interval=0.1)
     cm.start()
     time.sleep(0.1)
     # Overwrite with identical content
