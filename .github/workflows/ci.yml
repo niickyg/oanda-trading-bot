@@ -54,7 +54,7 @@ jobs:
           OANDA_TOKEN: ${{ secrets.OANDA_TOKEN }}
         run: |
           echo "START PYTEST: $(date +'%Y-%m-%d %H:%M:%S')"
-          pytest -n 2 -m "not slow" -vv --durations=10 --timeout=30 --setup-show --capture=no
+          pytest -n 2 -m "not slow" -vv --setup-show --capture=no --durations=10 --timeout=30
           echo "END PYTEST:   $(date +'%Y-%m-%d %H:%M:%S')"
 
       # 6 Run backtests on your core strategies
