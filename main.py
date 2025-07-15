@@ -102,14 +102,6 @@ def start_health_server():
     except OSError as e:
         logger.warning("Health server failed to start (port busy): %s", e)
 
-# Only start the health server if explicitly enabled
-# (default ON in Docker, OFF for local dev)
-
-
-if os.getenv("ENABLE_HEALTH", "1") == "1":
-    Thread(target=start_health_server, daemon=True).start()
-else:
-    logger.info("Health server disabled via ENABLE_HEALTH=0")
 
 try:
     from meta_optimize import run_meta_bandit  # noqa: E402
@@ -509,10 +501,16 @@ def bootstrap_history():
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     logger.info(f"🚀 Bot starting up in {os.getenv('MODE', 'paper')} mode")
+    # Start HTTP /health endpoint only in the main process
+    if os.getenv("ENABLE_HEALTH", "1") == "1":
+        Thread(target=start_health_server, daemon=True).start()
+    else:
+        logger.info("Health server disabled via ENABLE_HEALTH=0")
     bootstrap_history()
     last_active_refresh = time.time()
     print(f"Streaming {BAR_SECONDS}-second bars … Ctrl-C to stop.")
     while True:
+
         try:
             # Refresh active pairs every 5 minutes
             if time.time() - last_active_refresh >= 300:
@@ -531,6 +529,8 @@ if __name__ == "__main__":
             logger.warning("Stream dropped—reconnecting in 1s…", exc_info=True)
             time.sleep(1)
             continue
+
+
         except Exception:
             logger.exception("Unexpected error in main loop, shutting down.")
             send_alert("Fatal error in main loop, check live_trading.log for details")
