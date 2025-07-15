@@ -6,7 +6,7 @@ import pytest
 import os
 
 # Adjust import to your module path if needed
-from config_manager import ConfigManager, CONFIG_PATH
+from oanda_bot.config_manager import ConfigManager, CONFIG_PATH
 
 
 @pytest.fixture(autouse=True)

@@ -5,7 +5,7 @@ import pytest
 # Ensure project root is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import main  # noqa: E402
+from oanda_bot import main  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

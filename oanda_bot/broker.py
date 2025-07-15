@@ -7,8 +7,8 @@ from oandapyV20.endpoints.orders import (
     OrderCreate,
 )
 
-from .data.core import api as API
-from .data.core import OANDA_ACCOUNT_ID as ACCOUNT
+from oanda_bot.data.core import api as API
+from oanda_bot.data.core import OANDA_ACCOUNT_ID as ACCOUNT
 
 import math
 

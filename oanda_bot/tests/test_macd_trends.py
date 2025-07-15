@@ -1,5 +1,5 @@
 import pytest
-from strategy.macd_trends import MACDTrendStrategy
+from oanda_bot.strategy.macd_trends import MACDTrendStrategy
 
 
 def make_bars(prices):

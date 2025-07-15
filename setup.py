@@ -6,7 +6,8 @@ setup(
     description="OANDA trading bot and research toolkit",
     author="Nick Guerriero",
     author_email="nickguerriero@example.com",
-    packages=find_packages(include=["oanda_bot", "oanda_bot.*"]),
+    packages=find_packages(where="oanda_bot"),
+    package_dir={"": "oanda_bot"},
     install_requires=[
         # runtime dependencies
         "oandapyV20",
