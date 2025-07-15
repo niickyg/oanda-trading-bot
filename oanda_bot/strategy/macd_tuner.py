@@ -6,7 +6,7 @@ Grid-search tuner for MACD parameters using the backtest engine.
 import itertools
 import argparse
 from .macd_trends import MACDTrendStrategy
-from ..backtest import Backtester as Backtest
+from oanda_bot.backtest import Backtester as Backtest
 
 
 def tune_macd(fast_periods, slow_periods, signal_periods, **bt_kwargs):
