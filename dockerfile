@@ -9,8 +9,8 @@ FROM base AS dev
 COPY dev_requirements.txt .
 RUN pip install --no-cache-dir -r dev_requirements.txt
 COPY setup.py .
-RUN pip install --no-cache-dir -e .
 COPY . .
+RUN pip install --no-cache-dir -e .
 
 # Production stage
 FROM base AS prod
