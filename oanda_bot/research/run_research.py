@@ -160,5 +160,7 @@ def _require_env(var: str) -> str:
     return val
 
 if __name__ == "__main__":
+    _require_env("OANDA_TOKEN")
+    _require_env("OANDA_ACCOUNT_ID")
     main()
 # This script runs the nightly research pipeline, optimizing strategy parameters
