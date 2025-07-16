@@ -40,6 +40,12 @@ jobs:
       - name: Install pytest-xdist for parallel testing
         run: pip install pytest-xdist
 
+      - name: Set OANDA environment variables
+        run: |
+          echo "OANDA_TOKEN=${{ secrets.OANDA_TOKEN }}" >> $GITHUB_ENV
+          echo "OANDA_ACCOUNT_ID=${{ secrets.OANDA_ACCOUNT_ID }}" >> $GITHUB_ENV
+          echo "OANDA_ENV=practice" >> $GITHUB_ENV
+
       # 4 Lint your code
       - name: Lint with flake8
         run: |
