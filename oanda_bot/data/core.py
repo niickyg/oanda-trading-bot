@@ -39,8 +39,11 @@ def _get_account_id() -> str:
     return acc
 
 
-# 2) one shared API client
-api = oandapyV20.API(access_token=_get_token(), environment=OANDA_ENV)
+def _get_api_client():
+    """
+    Return a fresh OANDA API client using the current environment settings.
+    """
+    return oandapyV20.API(access_token=_get_token(), environment=OANDA_ENV)
 
 
 @api_retry
@@ -52,7 +55,7 @@ def get_candles(symbol="EUR_USD", granularity="M1", count=500, price="M"):
     """
     params = {"granularity": granularity, "count": count, "price": price}
     r = instruments.InstrumentsCandles(instrument=symbol, params=params)
-    api.request(r)
+    _get_api_client().request(r)
     return r.response["candles"]
 
 
@@ -116,7 +119,7 @@ def stream_bars(pairs, seconds: int = 5):
     bucket = collections.defaultdict(list)
     bucket_start = _dt.datetime.utcnow()
 
-    for msg in api.request(stream):
+    for msg in _get_api_client().request(stream):
         # skip heartbeats and other non‑price messages
         if msg.get("type") != "PRICE":
             continue
@@ -147,7 +150,6 @@ if __name__ == "__main__":
 
 
 __all__ = [
-    "api",
     "get_candles",
     "get_last_volume",
     "build_active_list",
