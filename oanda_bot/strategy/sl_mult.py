@@ -40,7 +40,11 @@ class Strategysl_mult:
         self.atr_window = atr_window
 
     @staticmethod
-    def generate_signals(data: pd.DataFrame, stop_loss_multiplier: float = 1.5, atr_window: int = 14) -> pd.Series:
+    def generate_signals(
+        data: pd.DataFrame,
+        stop_loss_multiplier: float = 1.5,
+        atr_window: int = 14
+    ) -> pd.Series:
         return generate_signals(data, stop_loss_multiplier, atr_window)
 
     param_grid = param_grid
