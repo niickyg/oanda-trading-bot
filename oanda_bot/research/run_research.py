@@ -116,9 +116,6 @@ def update_live_config(best_params: dict):
     print(f"Wrote {LIVE_CONFIG} with strategies: {config['enabled']}")
 
 def main():
-    # Fail fast if required OANDA credentials are missing
-    _require_env("OANDA_TOKEN")
-    _require_env("OANDA_ACCOUNT_ID")
     # Load live_config.json to check for meta-bandit flag
     config = {}
     if LIVE_CONFIG.exists():
