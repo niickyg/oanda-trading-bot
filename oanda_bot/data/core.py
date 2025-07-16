@@ -149,7 +149,6 @@ if __name__ == "__main__":
         print("Stopped.")
 
 
-
 __all__ = [
     "get_candles",
     "get_last_volume",
