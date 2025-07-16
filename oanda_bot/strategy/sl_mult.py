@@ -3,6 +3,7 @@
 import pandas as pd
 from oanda_bot.common.indicators import ATR
 
+
 def generate_signals(data: pd.DataFrame,
                      stop_loss_multiplier: float = 1.5,
                      atr_window: int = 14) -> pd.Series:
@@ -17,6 +18,7 @@ def generate_signals(data: pd.DataFrame,
     # Stop-loss price = close price minus multiplier * ATR
     stop_loss = df['close'] - stop_loss_multiplier * df['atr']
     return stop_loss
+
 
 # Parameter grid for research tuning
 param_grid = {
