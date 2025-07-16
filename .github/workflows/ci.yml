@@ -87,8 +87,13 @@ jobs:
             -t oanda-bot-dev .
 
       - name: Run research
+        env:
+          OANDA_TOKEN: ${{ secrets.OANDA_TOKEN }}
+          OANDA_ACCOUNT_ID: ${{ secrets.OANDA_ACCOUNT_ID }}
         run: |
           docker run --rm \
+            -e OANDA_TOKEN=$OANDA_TOKEN \
+            -e OANDA_ACCOUNT_ID=$OANDA_ACCOUNT_ID \
             -v "${{ github.workspace }}:/app" \
             oanda-bot-dev \
             python -m oanda_bot.research.run_research --latest-data
