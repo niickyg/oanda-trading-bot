@@ -5,6 +5,8 @@ import json
 import time
 import logging
 import numpy as np
+import os
+import sys
 from oanda_bot.backtest import run_backtest
 from oanda_bot.data.core import get_candles
 
@@ -74,6 +76,15 @@ def main():
     )
     args = arg_parser.parse_args()
     logger.debug("Arguments: %s", args)
+
+    # Fail fast if no real OANDA API token is available
+    token = os.getenv("OANDA_TOKEN", "")
+    if not token or token.lower().startswith("dummy"):
+        logger.error(
+            "Environment variable OANDA_TOKEN is missing or clearly invalid. "
+            "Provide a valid token (e.g., via CI secret or .env) before running optimize.py."
+        )
+        sys.exit(1)
 
     # Load base parameters for the chosen strategy (optional config)
     try:

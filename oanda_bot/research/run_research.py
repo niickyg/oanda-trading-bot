@@ -11,6 +11,7 @@ run_research.py
 Run the nightly research pipeline: optimize parameters or generate new strategies, then update live_config.json.
 """
 
+import os
 import json
 from oanda_bot.meta_optimize import run_meta_bandit
 try:
@@ -115,6 +116,9 @@ def update_live_config(best_params: dict):
     print(f"Wrote {LIVE_CONFIG} with strategies: {config['enabled']}")
 
 def main():
+    # Fail fast if required OANDA credentials are missing
+    _require_env("OANDA_TOKEN")
+    _require_env("OANDA_ACCOUNT_ID")
     # Load live_config.json to check for meta-bandit flag
     config = {}
     if LIVE_CONFIG.exists():
@@ -139,6 +143,24 @@ def main():
             best_params = load_best_params(inst)
             winners_params = evaluate_strategies(inst, best_params)
             update_live_config(winners_params)
+
+# --------------------------------------------------------------------------- #
+# Credential helpers
+# --------------------------------------------------------------------------- #
+def _require_env(var: str) -> str:
+    """
+    Ensure that a mandatory environment variable is present and not a
+    placeholder like 'YOUR_TOKEN_HERE'.  Exit with code 1 if the check fails.
+    """
+    val = os.getenv(var, "").strip()
+    if not val or val.upper().startswith("YOUR_") or val == "":  # crude placeholder detection
+        print(
+            f"Error: environment variable '{var}' is not set or looks like a placeholder. "
+            "Aborting research run.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return val
 
 if __name__ == "__main__":
     main()
