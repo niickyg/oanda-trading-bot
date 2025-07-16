@@ -12,6 +12,8 @@ Run the nightly research pipeline: optimize parameters or generate new strategie
 """
 
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import json
 from oanda_bot.meta_optimize import run_meta_bandit
 try:
