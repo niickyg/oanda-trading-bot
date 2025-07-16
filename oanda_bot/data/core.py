@@ -149,9 +149,13 @@ if __name__ == "__main__":
         print("Stopped.")
 
 
+
 __all__ = [
     "get_candles",
     "get_last_volume",
     "build_active_list",
     "stream_bars",
 ]
+
+# expose api client constructor for external use/tests
+api = _get_api_client
