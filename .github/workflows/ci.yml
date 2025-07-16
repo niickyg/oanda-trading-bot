@@ -42,8 +42,16 @@ jobs:
 
       - name: Set OANDA environment variables
         run: |
-          echo "OANDA_TOKEN=${{ secrets.OANDA_TOKEN }}" >> $GITHUB_ENV
-          echo "OANDA_ACCOUNT_ID=${{ secrets.OANDA_ACCOUNT_ID }}" >> $GITHUB_ENV
+          if [ -z "${{ secrets.OANDA_TOKEN }}" ]; then
+            echo "OANDA_TOKEN=DUMMY" >> $GITHUB_ENV
+          else
+            echo "OANDA_TOKEN=${{ secrets.OANDA_TOKEN }}" >> $GITHUB_ENV
+          fi
+          if [ -z "${{ secrets.OANDA_ACCOUNT_ID }}" ]; then
+            echo "OANDA_ACCOUNT_ID=DUMMY" >> $GITHUB_ENV
+          else
+            echo "OANDA_ACCOUNT_ID=${{ secrets.OANDA_ACCOUNT_ID }}" >> $GITHUB_ENV
+          fi
           echo "OANDA_ENV=practice" >> $GITHUB_ENV
 
       # 4 Lint your code
