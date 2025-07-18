@@ -4,9 +4,14 @@ import importlib
 import json
 import time
 import logging
-import numpy as np
 import os
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+# Third-party imports
+import numpy as np
+
+# Local application imports
 from oanda_bot.backtest import run_backtest
 from oanda_bot.data.core import get_candles
 
@@ -128,60 +133,50 @@ def main():
         # Generate grid of SL, TP, max_duration, and trailing ATR ratios
         sl_mults = list(np.linspace(0.5, 3.0, int((3.0 - 0.5) / 0.25) + 1))
         tp_mults = list(np.linspace(0.5, 3.0, int((3.0 - 0.5) / 0.25) + 1))
-        max_duration_options = [10, 20, 50, 100]  # bars before forced exit
-        trail_atr_ratios = [0.5, 1.0, 1.5]       # trailing stop as ATR multiples
+        max_duration_options = [10, 20, 50, 100]
+        trail_atr_ratios = [0.5, 1.0, 1.5]
 
-        # --- progress bookkeeping -------------------------------------------------
-        total_tests = (
-            len(sl_mults)
-            * len(tp_mults)
-            * len(max_duration_options)
-            * len(trail_atr_ratios)
-        )
-        completed = 0
+        # Build list of parameter sets
+        param_list = [
+            {
+                **base_params,
+                "sl_mult": sl,
+                "tp_mult": tp,
+                "max_duration": md,
+                "trail_atr": ta,
+            }
+            for sl in sl_mults
+            for tp in tp_mults
+            for md in max_duration_options
+            for ta in trail_atr_ratios
+        ]
 
         results = []
-        for sl_mult in sl_mults:
-            for tp_mult in tp_mults:
-                for max_dur in max_duration_options:
-                    for trail_atr in trail_atr_ratios:
-                        logger.info(
-                            "Trying SLx%.2f TPx%.2f Dur=%d TrailATR=%.2f",
-                            sl_mult, tp_mult, max_dur, trail_atr
-                        )
-                        logger.debug(
-                            "Testing SL=%.2f TP=%.2f Dur=%d Trail=%.2f",
-                            sl_mult, tp_mult, max_dur, trail_atr
-                        )
-                        # Set parameters for this run
-                        params = {
-                            **base_params,
-                            "sl_mult": sl_mult,
-                            "tp_mult": tp_mult,
-                            "max_duration": max_dur,
-                            "trail_atr": trail_atr,
-                        }
-                        logger.debug("PARAMS: %s", params)
-                        strategy = strat_cls(params)
-                        stats = run_backtest(strategy, candles, warmup=warmup)
-                        trades = stats["trades"]
-                        if trades == 0:
-                            continue
-                        completed += 1
-                        if completed % 50 == 0 or completed == total_tests:
-                            pct = completed / total_tests * 100
-                            logger.info("Progress: %d/%d (%.1f%%)", completed, total_tests, pct)
-                        results.append({
-                            "sl_mult": sl_mult,
-                            "tp_mult": tp_mult,
-                            "max_duration": max_dur,
-                            "trail_atr": trail_atr,
-                            "trades": trades,
-                            "win_rate": stats["win_rate"],
-                            "expectancy": stats["expectancy"],
-                            "sharpe": stats.get("sharpe"),
-                            "drawdown": stats.get("max_drawdown"),
-                        })
+
+        def run_one(params):
+            strategy = strat_cls(params)
+            stats = run_backtest(strategy, candles, warmup=warmup)
+            return params, stats
+
+        total = len(param_list)
+        with ProcessPoolExecutor() as executor:
+            futures = [executor.submit(run_one, p) for p in param_list]
+            for i, fut in enumerate(as_completed(futures), 1):
+                params, stats = fut.result()
+                trades = stats.get("trades", 0)
+                if trades == 0:
+                    continue
+                pct = i / total * 100
+                logger.info("Progress: %d/%d (%.1f%%)", i, total, pct)
+                results.append({
+                    **params,
+                    "trades": trades,
+                    "win_rate": stats["win_rate"],
+                    "expectancy": stats["expectancy"],
+                    "sharpe": stats.get("sharpe"),
+                    "drawdown": stats.get("max_drawdown"),
+                })
+
         logger.info("Evaluated %d parameter sets (raw)", len(results))
         if not results:
             logger.warning("No valid parameter sets found")
