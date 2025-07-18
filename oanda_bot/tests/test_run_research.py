@@ -1,7 +1,7 @@
 import json
 import pytest
 from pathlib import Path
-import research.run_research as rr
+from oanda_bot.research import run_research as rr
 
 
 @pytest.fixture(autouse=True)

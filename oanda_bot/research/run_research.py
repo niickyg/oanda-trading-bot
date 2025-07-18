@@ -23,6 +23,9 @@ except ImportError:
 
 STRATEGY_NAME = "MACDTrend"
 DEFAULT_INSTRUMENTS = os.getenv("RESEARCH_INSTRUMENTS", "EUR_USD").split(",")
+PROMOTE_MIN_TRADES = int(os.getenv("PROMOTE_MIN_TRADES", "10"))
+PROMOTE_MIN_WIN = float(os.getenv("PROMOTE_MIN_WIN", "0.5"))  # proportion, e.g. 0.55 = 55 %
+PROMOTE_MIN_EXPECT = float(os.getenv("PROMOTE_MIN_EXPECT", "0.0"))
 
 def best_params_path(inst: str) -> Path:
     return Path(f"best_params_{inst}.json")
@@ -83,8 +86,16 @@ def evaluate_strategies(instrument: str, best_params: Dict[str, Any]) -> Dict[st
         })
         print(f"{name}: trades={trades}, win_rate={win_rate:.2%}, expectancy={expectancy:.6f}")
 
-    # Filter winners: at least 10 trades, win_rate >= 50%, expectancy > 0
-    winners = [r["name"] for r in results if r["trades"] >= 10 and r["win_rate"] >= 0.5 and r["expectancy"] > 0]
+    # Filter winners based on configurable thresholds
+    winners = [
+        r["name"]
+        for r in results
+        if (
+            r["trades"] >= PROMOTE_MIN_TRADES
+            and r["win_rate"] >= PROMOTE_MIN_WIN
+            and r["expectancy"] >= PROMOTE_MIN_EXPECT
+        )
+    ]
     print(f"\nPromoting winners: {winners}")
 
     # Build new params dict
