@@ -1,35 +1,28 @@
+import importlib
+import json
+import os
+import subprocess
 import sys
 from pathlib import Path
+from typing import Any, Dict
 
-# Ensure project root is in path so backtest.py can be imported
-
-STRATEGY_NAME = "MACDTrend"
-#!/usr/bin/env python3
-"""
-run_research.py
-
-Run the nightly research pipeline: optimize parameters or generate new strategies, then update live_config.json.
-"""
-
-import os
 from dotenv import load_dotenv
+
 load_dotenv()
-import json
+
+from oanda_bot.backtest import run_backtest
+from oanda_bot.data import get_candles
 from oanda_bot.meta_optimize import run_meta_bandit
+
 try:
     from oanda_bot.strategy.plugins import get_enabled_strategies
 except ImportError:
     def get_enabled_strategies():
         """Stub if strategy.plugins missing."""
         return []
-import subprocess
-import sys
-from pathlib import Path
 
-import importlib
-from oanda_bot.backtest import run_backtest
-from oanda_bot.data import get_candles
-from typing import Dict, Any
+STRATEGY_NAME = "MACDTrend"
+DEFAULT_INSTRUMENTS = os.getenv("RESEARCH_INSTRUMENTS", "EUR_USD").split(",")
 
 def best_params_path(inst: str) -> Path:
     return Path(f"best_params_{inst}.json")
@@ -125,7 +118,8 @@ def main():
             config = json.load(f)
     use_meta = config.get("meta_bandit", False)
     rounds = config.get("rounds", 100)
-    instruments = ["EUR_USD"]
+    instruments = [s.strip().upper() for s in DEFAULT_INSTRUMENTS if s.strip()]
+    aggregated: Dict[str, Any] = {"enabled": []}
     for inst in instruments:
         if use_meta:
             # Meta-bandit optimization
@@ -142,7 +136,14 @@ def main():
             raw_params = load_best_params(inst)
             best_params = {STRATEGY_NAME: raw_params}
             winners_params = evaluate_strategies(inst, best_params)
-            update_live_config(winners_params)
+            # Merge results into aggregated mapping
+            enabled_list = winners_params.get("enabled", [])
+            aggregated["enabled"].extend([s for s in enabled_list if s not in aggregated["enabled"]])
+            for strat_name in enabled_list:
+                inst_map = aggregated.setdefault(strat_name, {})
+                inst_map[inst] = winners_params[strat_name]
+
+    update_live_config(aggregated)
 
 # --------------------------------------------------------------------------- #
 # Credential helpers
