@@ -119,6 +119,7 @@ def main():
     use_meta = config.get("meta_bandit", False)
     rounds = config.get("rounds", 100)
     instruments = [s.strip().upper() for s in DEFAULT_INSTRUMENTS if s.strip()]
+    single = len(instruments) == 1
     aggregated: Dict[str, Any] = {"enabled": []}
     for inst in instruments:
         if use_meta:
@@ -130,12 +131,18 @@ def main():
                 candles=historical_candles,
                 rounds=rounds,
             )
+            if single:
+                update_live_config({"enabled": enabled_strategy_list})
+                return
         else:
             # Grid-sweeper fallback
             run_optimizer(inst)
             raw_params = load_best_params(inst)
             best_params = {STRATEGY_NAME: raw_params}
             winners_params = evaluate_strategies(inst, best_params)
+            if single:
+                update_live_config(winners_params)
+                return
             # Merge results into aggregated mapping
             enabled_list = winners_params.get("enabled", [])
             aggregated["enabled"].extend([s for s in enabled_list if s not in aggregated["enabled"]])
@@ -143,7 +150,8 @@ def main():
                 inst_map = aggregated.setdefault(strat_name, {})
                 inst_map[inst] = winners_params[strat_name]
 
-    update_live_config(aggregated)
+    if not single:
+        update_live_config(aggregated)
 
 # --------------------------------------------------------------------------- #
 # Credential helpers
