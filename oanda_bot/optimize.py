@@ -209,12 +209,13 @@ def main():
         # TODO: switch key to "sharpe" or "drawdown" as needed
         # results.sort(key=lambda r: r["expectancy"], reverse=True)
         best = results[0]
-        logger.info("Best parameters: %s", best)
+        wrapped = {args.strategy: best}
+        logger.info("Best parameters: %s", wrapped)
 
         # write to JSON
         out = f"best_params_{inst}.json"
         with open(out, "w") as f:
-            json.dump(best, f, indent=2)
+            json.dump(wrapped, f, indent=2)
         logger.info(f"Wrote best parameters to {out}")
     logger.info(f"Completed in {time.perf_counter() - start:.1f} seconds")
 

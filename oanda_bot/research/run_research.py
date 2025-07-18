@@ -139,7 +139,8 @@ def main():
         else:
             # Grid-sweeper fallback
             run_optimizer(inst)
-            best_params = load_best_params(inst)
+            raw_params = load_best_params(inst)
+            best_params = {STRATEGY_NAME: raw_params}
             winners_params = evaluate_strategies(inst, best_params)
             update_live_config(winners_params)
 
