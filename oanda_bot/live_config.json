@@ -1,5 +1,6 @@
 {
   "enabled": [],
+  "risk_pct": 0.005,
   "meta_bandit": true,
   "rounds": 100
 }
