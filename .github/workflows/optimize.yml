@@ -1,0 +1,60 @@
+
+
+name: Nightly Parameter Optimization
+
+on:
+  schedule:
+    # Run every day at 03:00 UTC (adjust as desired)
+    - cron: '0 3 * * *'
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Check out the code
+      - uses: actions/checkout@v3
+
+      # 2) Set up Python
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # 3) Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 4) Run the optimizer
+      - name: Run nightly optimization
+        run: |
+          python oanda_bot/optimize.py \
+            --instruments EUR_USD USD_JPY GBP_USD \
+            --granularity H1 --count 500
+
+      # 5) Commit & push updated config if changed
+      - name: Commit updated config
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [[ -n $(git status --porcelain live_config.json) ]]; then
+            git add live_config.json
+            git commit -m "chore: nightly optimized params"
+            git push
+          else
+            echo "No changes to live_config.json"
+          fi
+
+      # 6) Restart paper-trader service via SSH
+      - name: Restart paper-trader service
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.TRADER_HOST }}
+          username: ${{ secrets.TRADER_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /path/to/your/bot
+            docker-compose pull
+            docker-compose up -d bot
