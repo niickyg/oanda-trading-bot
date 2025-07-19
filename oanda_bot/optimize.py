@@ -11,6 +11,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 # Third-party imports
 import numpy as np
 
+
 # Local application imports
 from oanda_bot.backtest import run_backtest
 from oanda_bot.data.core import get_candles
@@ -122,6 +123,7 @@ def main():
         inst: get_candles(inst, args.granularity, args.count)
         for inst in instruments
     }
+    combined = {}
     for inst, cands in candles_map.items():
         logger.info("Optimizing %s", inst)
         candles = cands
@@ -220,12 +222,17 @@ def main():
         best = results[0]
         wrapped = {args.strategy: best}
         logger.info("Best parameters: %s", wrapped)
+        combined[inst] = best
 
         # write to JSON
         out = f"best_params_{inst}.json"
         with open(out, "w") as f:
             json.dump(wrapped, f, indent=2)
         logger.info(f"Wrote best parameters to {out}")
+    # Write consolidated parameters for all instruments
+    with open("live_config.json", "w") as f:
+        json.dump({args.strategy: combined}, f, indent=2)
+    logger.info("Wrote consolidated live_config.json")
     logger.info(f"Completed in {time.perf_counter() - start:.1f} seconds")
 
 

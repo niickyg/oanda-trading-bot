@@ -22,13 +22,13 @@ from oandapyV20.endpoints.accounts import AccountSummary
 import broker  # noqa: F401  # expose module for tests that patch main.broker
 # Only pull in the live OANDA data core when running as the main script
 if __name__ == "__main__":
-    from data.core import (
+    from data.core import (  # noqa: E402
         OANDA_ACCOUNT_ID as ACCOUNT,
         api as API,
         build_active_list,
         get_candles,
         stream_bars,
-    )
+    )  # noqa: E402
 else:
     # Stubs for import-time usage (e.g. pytest)
     ACCOUNT = None
@@ -44,6 +44,7 @@ else:
         return iter([])
 from strategy.base import BaseStrategy
 from strategy.utils import sl_tp_levels
+from oanda_bot.backtest import run_backtest
 from dotenv import load_dotenv
 
 # Load environment variables from .env file, if present
@@ -284,8 +285,17 @@ peak_equity = account_equity
 drawdown_pct = 0.0
 last_order_ts = 0.0  # epoch seconds
 
-# Load and watch for config changes to strategies
-strategy_instances = load_strategies()
+# Load strategy instances and apply optimized parameters from live_config.json
+raw_strategies = load_strategies()
+try:
+    optimized_conf = load_config()
+except Exception:
+    optimized_conf = {}
+strategy_instances = []
+for strat in raw_strategies:
+    params = optimized_conf.get(strat.name, {})
+    # Re-instantiate each strategy with its optimized params
+    strategy_instances.append(strat.__class__(params))
 # config_watcher = watch_strategies()
 
 
@@ -531,6 +541,25 @@ if __name__ == "__main__":
         else:
             logger.info("Health server disabled via ENABLE_HEALTH=0")
     bootstrap_history()
+
+    # Short validation backtest on recent data to validate optimized params
+    try:
+        validation_length = 200
+        for pair in list(ACTIVE_PAIRS)[:5]:
+            candles = get_candles(symbol=pair, count=validation_length)
+            for strat in strategy_instances:
+                stats = run_backtest(strat, candles, warmup=validation_length // 4)
+                logger.info(
+                    "Validation backtest for %s on %s: trades=%d, win_rate=%.2f%%, total_pnl=%.2f",
+                    strat.name,
+                    pair,
+                    stats.get("trades", 0),
+                    stats.get("win_rate", 0) * 100,
+                    stats.get("total_pnl", 0),
+                )
+    except Exception as e:
+        logger.warning("Validation backtest failed: %s", e)
+
     last_active_refresh = time.time()
     print(f"Streaming {BAR_SECONDS}-second bars … Ctrl-C to stop.")
     while True:
