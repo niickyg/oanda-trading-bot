@@ -3,7 +3,6 @@ Risk management utilities for OANDA trading.
 """
 
 
-
 def calc_units(balance: float, pair: str, sl_pips: float, risk_pct: float) -> int:
     """
     Calculate number of units to trade based on account balance, currency pair notation,
