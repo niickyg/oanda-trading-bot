@@ -23,6 +23,7 @@ def init_worker(candles_data, strategy_class, warmup_bars):
     _strat_cls = strategy_class
     _warmup = warmup_bars
 
+
 # Module-level run_one that only takes params
 def run_one(params):
     strategy = _strat_cls(params)
