@@ -3,9 +3,6 @@ Risk management utilities for OANDA trading.
 """
 
 
-from typing import Optional
-
-
 
 def calc_units(balance: float, pair: str, sl_pips: float, risk_pct: float) -> int:
     """
