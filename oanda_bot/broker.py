@@ -1,8 +1,8 @@
-from typing import Optional, List
-
 import os
 import math
 import logging
+
+from typing import Optional, List
 
 from oandapyV20.endpoints.positions import (
     OpenPositions,
