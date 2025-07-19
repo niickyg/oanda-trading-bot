@@ -550,7 +550,8 @@ if __name__ == "__main__":
             for strat in strategy_instances:
                 stats = run_backtest(strat, candles, warmup=validation_length // 4)
                 logger.info(
-                    "Validation backtest for %s on %s: trades=%d, win_rate=%.2f%%, total_pnl=%.2f",
+                    "Validation backtest for %s on %s: trades=%d, "
+                    "win_rate=%.2f%%, total_pnl=%.2f",
                     strat.name,
                     pair,
                     stats.get("trades", 0),
