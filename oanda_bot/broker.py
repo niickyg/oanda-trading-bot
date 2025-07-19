@@ -1,4 +1,9 @@
 from typing import Optional, List
+
+import os
+import math
+import logging
+
 from oandapyV20.endpoints.positions import (
     OpenPositions,
     PositionClose,
@@ -10,10 +15,6 @@ from oandapyV20.endpoints.orders import (
 from oanda_bot.data.core import api as API
 from oanda_bot.data.core import OANDA_ACCOUNT_ID as ACCOUNT
 
-import math
-
-import logging
-import os
 
 # If running in CI (or ACCOUNT is missing), avoid real network calls and simulate responses.
 _TEST_MODE = bool(os.getenv("CI")) or not ACCOUNT

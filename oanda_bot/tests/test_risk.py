@@ -23,3 +23,4 @@ def test_calc_units_raises_on_zero_sl():
     """A zero stop‑loss distance must raise ValueError."""
     with pytest.raises(ValueError):
         calc_units(balance=10_000, pair="EUR_USD", sl_pips=0, risk_pct=0.01)
+        
