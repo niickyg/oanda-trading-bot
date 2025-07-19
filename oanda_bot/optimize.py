@@ -6,7 +6,7 @@ import time
 import logging
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor as ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Third-party imports
 import numpy as np
@@ -16,12 +16,17 @@ from oanda_bot.backtest import run_backtest
 from oanda_bot.data.core import get_candles
 
 
-def run_one(params, strat_cls, candles, warmup):
-    """
-    Run backtest for a single parameter set.
-    """
-    strategy = strat_cls(params)
-    stats = run_backtest(strategy, candles, warmup=warmup)
+# Worker initializer to set up globals for pickling efficiency
+def init_worker(candles_data, strategy_class, warmup_bars):
+    global _candles, _strat_cls, _warmup
+    _candles = candles_data
+    _strat_cls = strategy_class
+    _warmup = warmup_bars
+
+# Module-level run_one that only takes params
+def run_one(params):
+    strategy = _strat_cls(params)
+    stats = run_backtest(strategy, _candles, warmup=_warmup)
     return params, stats
 
 
@@ -164,11 +169,11 @@ def main():
         results = []
 
         total = len(param_list)
-        with ProcessPoolExecutor() as executor:
-            futures = [
-                executor.submit(run_one, p, strat_cls, candles, warmup)
-                for p in param_list
-            ]
+        with ProcessPoolExecutor(
+            initializer=init_worker,
+            initargs=(candles, strat_cls, warmup)
+        ) as executor:
+            futures = [executor.submit(run_one, p) for p in param_list]
             for i, fut in enumerate(as_completed(futures), 1):
                 params, stats = fut.result()
                 trades = stats.get("trades", 0)
