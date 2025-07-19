@@ -16,10 +16,17 @@ from oanda_bot.backtest import run_backtest
 from oanda_bot.data.core import get_candles
 
 
-# Moved out of main() to allow pickling in ProcessPoolExecutor
-def run_one(params, strat_cls, candles, warmup):
-    strategy = strat_cls(params)
-    stats = run_backtest(strategy, candles, warmup=warmup)
+# Worker initializer to set up globals for pickling efficiency
+def init_worker(candles_data, strategy_class, warmup_bars):
+    global _worker_candles, _worker_strat_cls, _worker_warmup
+    _worker_candles = candles_data
+    _worker_strat_cls = strategy_class
+    _worker_warmup = warmup_bars
+
+# Simplified run_one using module globals
+def run_one(params):
+    strategy = _worker_strat_cls(params)
+    stats = run_backtest(strategy, _worker_candles, warmup=_worker_warmup)
     return params, stats
 
 
@@ -162,8 +169,11 @@ def main():
         results = []
 
         total = len(param_list)
-        with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(run_one, p, strat_cls, candles, warmup) for p in param_list]
+        with ProcessPoolExecutor(
+            initializer=init_worker,
+            initargs=(candles, strat_cls, warmup)
+        ) as executor:
+            futures = [executor.submit(run_one, p) for p in param_list]
             for i, fut in enumerate(as_completed(futures), 1):
                 params, stats = fut.result()
                 trades = stats.get("trades", 0)
