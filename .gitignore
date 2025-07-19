@@ -263,3 +263,4 @@ build/
 *.csv
 *.DS_Store
 
+.env
