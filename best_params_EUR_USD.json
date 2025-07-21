@@ -1,11 +1,24 @@
 {
-  "sl_mult": 2.75,
-  "tp_mult": 3.0,
-  "max_duration": 100,
-  "trail_atr": 0.5,
-  "trades": 110,
-  "win_rate": 0.5272727272727272,
-  "expectancy": 0.0006328116883117067,
-  "sharpe": null,
-  "drawdown": null
+  "MACDTrend": {
+    "EUR_USD": {
+      "sl_mult": 3.0,
+      "tp_mult": 3.0,
+      "max_duration": 100,
+      "trail_atr": 0.5,
+      "trades": 33,
+      "win_rate": 0.5454545454545454,
+      "expectancy": 0.0010702813852814103,
+      "sharpe": null,
+      "drawdown": null
+    },
+    "sl_mult": 3.0,
+    "tp_mult": 3.0,
+    "max_duration": 100,
+    "trail_atr": 0.5,
+    "trades": 33,
+    "win_rate": 0.5454545454545454,
+    "expectancy": 0.0010702813852814103,
+    "sharpe": null,
+    "drawdown": null
+  }
 }

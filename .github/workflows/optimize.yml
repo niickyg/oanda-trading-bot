@@ -29,10 +29,14 @@ jobs:
 
       # 4) Run the optimizer
       - name: Run nightly optimization
+        env:
+          OANDA_TOKEN: ${{ secrets.OANDA_TOKEN }}
+          OANDA_ACCOUNT_ID: ${{ secrets.OANDA_ACCOUNT_ID }}
         run: |
-          python oanda_bot/optimize.py \
+          python -m oanda_bot.optimize \
             --instruments EUR_USD USD_JPY GBP_USD \
-            --granularity H1 --count 500
+            --granularity H1 \
+            --count 500
 
       # 5) Commit & push updated config if changed
       - name: Commit updated config

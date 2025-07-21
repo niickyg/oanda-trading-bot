@@ -1,10 +1,12 @@
 
+import warnings
+warnings.filterwarnings("ignore", message=".*missing ScriptRunContext.*")
 import csv
 import json
 import os
 import itertools
 import time
-from collections import deque
+from collections import deque, defaultdict
 from datetime import datetime
 from requests.exceptions import ChunkedEncodingError
 import requests
@@ -17,18 +19,20 @@ import sys
 import logging
 import logging.handlers
 from pythonjsonlogger import jsonlogger
+from typing import Optional
+import threading
 
 from oandapyV20.endpoints.accounts import AccountSummary
-import broker  # noqa: F401  # expose module for tests that patch main.broker
+from oanda_bot import broker  # noqa: F401  # expose module for tests that patch main.broker
 # Only pull in the live OANDA data core when running as the main script
 if __name__ == "__main__":
-    from data.core import (  # noqa: E402
+    from oanda_bot.data.core import (  # noqa: E402
         OANDA_ACCOUNT_ID as ACCOUNT,
-        api as API,
         build_active_list,
         get_candles,
         stream_bars,
     )  # noqa: E402
+    from oanda_bot.broker import API  # noqa: E402
 else:
     # Stubs for import-time usage (e.g. pytest)
     ACCOUNT = None
@@ -42,8 +46,8 @@ else:
 
     def stream_bars(*args, **kwargs):
         return iter([])
-from strategy.base import BaseStrategy
-from strategy.utils import sl_tp_levels
+from oanda_bot.strategy.base import BaseStrategy
+from oanda_bot.strategy.utils import sl_tp_levels
 from oanda_bot.backtest import run_backtest
 from dotenv import load_dotenv
 
@@ -83,9 +87,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 
+# Also log to stdout so crashes are visible when running locally
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
+# Suppress Streamlit logger warnings by elevating their log level
+logging.getLogger("streamlit.runtime.scriptrunner_utils.script_run_context").setLevel(logging.ERROR)
+logging.getLogger("streamlit.runtime.state.session_state_proxy").setLevel(logging.ERROR)
 # ---------------------------------------------------------------------------
 
 
@@ -127,7 +135,7 @@ except ImportError:
         pass
 
 try:
-    from strategy.plugins import get_enabled_strategies  # noqa: E402
+    from oanda_bot.strategy.plugins import get_enabled_strategies  # noqa: E402
 except ImportError:
     def get_enabled_strategies():
         """Stub for tests if strategy.plugins missing."""
@@ -143,13 +151,38 @@ def load_config():
         return json.load(f)
 
 
+# --- Helper: watch and reload config (hot-reload strategy params) ---
+def watch_and_reload_config(path: str, interval: float = 1800.0):
+    """Watch a JSON config file for changes, reload strategies when it updates."""
+    last_mtime = None
+    while True:
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            mtime = None
+        if mtime and mtime != last_mtime:
+            last_mtime = mtime
+            logger.info(f"Config change detected at {path}, reloading strategies")
+            try:
+                cfg = load_config()
+                # Rebuild strategy instances with new params
+                strategy_instances.clear()
+                raw = load_strategies()
+                for strat in raw:
+                    params = cfg.get(strat.name, {})
+                    strategy_instances.append(strat.__class__(params))
+            except Exception:
+                logger.error("Failed to reload config", exc_info=True)
+        time.sleep(interval)
+
+
 def load_strategies():
     """
     Auto‑discover and instantiate every BaseStrategy subclass inside
     the *installed* ``strategy`` package, regardless of the current
     working directory.
     """
-    import strategy as strategy_pkg  # import the package itself
+    import oanda_bot.strategy as strategy_pkg  # import the package itself
 
     strategies = []
     seen = set()
@@ -205,8 +238,9 @@ except FileNotFoundError:
     # Tests or CI may not provide best_params.json
     pass
 
-BEST_SL_MULT = _best.get("sl_mult", 1.5)
-BEST_TP_MULT = _best.get("tp_mult", 2.0)
+# Widened multipliers to improve reward‑to‑risk
+BEST_SL_MULT = _best.get("sl_mult", 2.0)
+BEST_TP_MULT = _best.get("tp_mult", 3.5)
 
 
 # Allowed decimal precision per instrument
@@ -229,6 +263,9 @@ PRECISION = {
     "EUR_AUD": 5,
     # Default fallback
 }
+
+# Skip trades when volatility is too low to clear spread + commission
+MIN_ATR_THRESHOLD = 0.0004  # 4× typical spread on 5‑digit majors
 
 
 def round_price(instrument: str, price: float) -> str:
@@ -284,6 +321,9 @@ account_equity = 1000.0  # will be refreshed from API
 peak_equity = account_equity
 drawdown_pct = 0.0
 last_order_ts = 0.0  # epoch seconds
+# Cool‑down tracking: last time each (pair, strategy) fired
+last_signal_ts_by_pair_strategy = defaultdict(float)
+COOLDOWN_SECONDS = 60  # one trade per pair+strategy each minute
 
 # Load strategy instances and apply optimized parameters from live_config.json
 raw_strategies = load_strategies()
@@ -307,6 +347,7 @@ def log_trade(
     side: str,
     units: int,
     order_id: str,
+    strategy: str,
     entry: float,
     sl: float,
     tp: float,
@@ -325,6 +366,7 @@ def log_trade(
                     "side",
                     "units",
                     "order_id",
+                    "strategy",
                     "entry",
                     "stop_loss",
                     "take_profit",
@@ -339,6 +381,7 @@ def log_trade(
                 side,
                 units,
                 order_id,
+                strategy,
                 f"{entry:.5f}",
                 sl,
                 tp,
@@ -354,11 +397,14 @@ def log_trade(
 
 
 # Unified signal handler for modular strategies
-def handle_signal(pair: str, price: float, signal: str):
+def handle_signal(pair: str, price: float, signal: str, strategy_name: Optional[str] = None):
     """
     Issue order for a given signal using risk-managed broker.
     """
     global last_order_ts, account_equity, last_equity_fetch, peak_equity, drawdown_pct
+
+    if strategy_name is None:
+        strategy_name = "unknown"
 
     if not signal:
         logger.debug("signal.none", extra={"instrument": pair})
@@ -371,8 +417,16 @@ def handle_signal(pair: str, price: float, signal: str):
     if time.time() - last_order_ts < BAR_SECONDS:
         return
 
-    # Compute ATR (placeholder)
-    atr = 0.0005
+    # Compute a simple 14‑bar ATR; fall back to 0.0005 if not enough data
+    if len(atr_history[pair]) >= 14:
+        last14_tr = list(atr_history[pair])[-14:]  # convert deque → list before slicing
+        atr = sum(last14_tr) / 14
+    else:
+        atr = 0.0005
+    # Abort if volatility is too low
+    if atr < MIN_ATR_THRESHOLD:
+        logger.debug(f"{pair} | SKIP {signal}: ATR too low ({atr:.5f})")
+        return
 
     # Determine SL/TP levels
     sl_raw, tp_raw = sl_tp_levels(
@@ -384,6 +438,19 @@ def handle_signal(pair: str, price: float, signal: str):
     if float(sl) == price:
         logger.warning(f"{pair} | SKIP {signal} @ {price:.5f}: SL equals entry")
         return
+
+    # Ensure SL and TP are not identical; adjust TP by one tick if needed
+    sl_val = float(sl)
+    tp_val = float(tp)
+    # Determine tick size from PRECISION
+    tick = 1 / (10 ** PRECISION.get(pair, 5))
+    if tp_val == sl_val:
+        if signal == "BUY":
+            tp_val = sl_val + tick
+        else:
+            tp_val = sl_val - tick
+        tp = round_price(pair, tp_val)
+        logger.debug(f"{pair} | Adjusted TP to avoid equality: {tp}")
 
     # Refresh equity every 30s
     if time.time() - last_equity_fetch >= 30:
@@ -413,13 +480,15 @@ def handle_signal(pair: str, price: float, signal: str):
 
         # Now fetch fresh equity for next cycle
         try:
-            summary = API.request(AccountSummary(ACCOUNT))
+            # Use the instantiated client from broker module
+            from oanda_bot.broker import API as _API_client
+            summary = _API_client.request(AccountSummary(ACCOUNT))
             account_equity = float(summary["account"]["NAV"])
         except Exception:
             logger.error("Equity fetch error", exc_info=True)
 
     # Base risk fraction
-    risk_frac = 0.01
+    risk_frac = 0.02  # 2 % equity per trade
     # Reduce risk if drawdown exceeds 5%
     if drawdown_pct > 0.05:
         risk_frac *= 0.5
@@ -456,9 +525,10 @@ def handle_signal(pair: str, price: float, signal: str):
             "atr": atr,
             "session_hour": session_hour,
             "order_id": order_id,
+            "strategy": strategy_name,
         },
     )
-    log_trade(pair, signal, units, order_id, price, sl, tp, atr, session_hour)
+    log_trade(pair, signal, units, order_id, strategy_name, price, sl, tp, atr, session_hour)
     last_order_ts = time.time()
 
 
@@ -481,23 +551,39 @@ def handle_bar(bar_close: dict):
         if price is None:
             continue
 
-        # Aggregate signals from all enabled strategies
-        signal = None
+        closes = list(history[pair])[-6:]
+        slope_ok = lambda s: True
+        if len(closes) >= 6:
+            slope = closes[-1] - closes[0]
+            def slope_ok(sig):
+                return not ((sig == "BUY" and slope < 0) or (sig == "SELL" and slope > 0))
+
+        signals = []
         for strat in strategy_instances:
             sig = strat.next_signal(list(history[pair]))
-            if sig:
-                signal = sig
-                break
+            if sig and slope_ok(sig):
+                signals.append((sig, strat.name))
 
-        # Optional: log signal generation with structured logging
-        if signal:
+        for sig, strat_name in signals:
+            key = (pair, strat_name)
+            # Per‑pair+strategy cool‑down
+            if time.time() - last_signal_ts_by_pair_strategy[key] < COOLDOWN_SECONDS:
+                continue
+
+            # Structured debug log for each accepted signal
             logger.debug(
                 "signal.generated",
-                extra={"instrument": pair, "signal": signal, "price": price},
+                extra={
+                    "instrument": pair,
+                    "signal": sig,
+                    "strategy": strat_name,
+                    "price": price,
+                },
             )
 
-        # Handle the signal for this pair
-        handle_signal(pair, price, signal)
+            # Dispatch to unified handler
+            handle_signal(pair, price, sig, strat_name)
+            last_signal_ts_by_pair_strategy[key] = time.time()
 
 
 # ---------------------------------------------------------------------------
@@ -531,6 +617,9 @@ def bootstrap_history():
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     logger.info(f"🚀 Bot starting up in {os.getenv('MODE', 'paper')} mode")
+    # Send a startup ping to the webhook (if configured)
+    send_alert(f"🚀 Bot restarted in {os.getenv('MODE', 'paper')} mode "
+               f"at {datetime.utcnow().isoformat(timespec='seconds')} UTC")
     # In CI we never launch the health‑check server
     if os.getenv("CI"):
         logger.info("CI detected – skipping health server start")
@@ -540,6 +629,12 @@ if __name__ == "__main__":
             Thread(target=start_health_server, daemon=True).start()
         else:
             logger.info("Health server disabled via ENABLE_HEALTH=0")
+
+    # Start background thread to reload updated params from shared file
+    config_path = os.getenv("CONFIG_PATH", "best_params.json")
+    t = threading.Thread(target=watch_and_reload_config, args=(config_path,), daemon=True)
+    t.start()
+
     bootstrap_history()
 
     # Short validation backtest on recent data to validate optimized params

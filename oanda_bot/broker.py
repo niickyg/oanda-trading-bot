@@ -12,7 +12,8 @@ from oandapyV20.endpoints.orders import (
     OrderCreate,
 )
 
-from oanda_bot.data.core import api as API
+from oanda_bot.data.core import api as _api_factory  # 'api' returns an API client
+API = _api_factory()  # instantiate the API client
 from oanda_bot.data.core import OANDA_ACCOUNT_ID as ACCOUNT
 
 
