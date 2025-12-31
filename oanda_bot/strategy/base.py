@@ -84,3 +84,16 @@ class BaseStrategy(ABC):
     def _pip_size(instrument: str) -> float:
         """0.01 for JPY pairs, else 0.0001."""
         return 0.01 if instrument.endswith("JPY") else 0.0001
+
+    # ------------------------------------------------------------------ #
+    # Public helper: instrument tick size
+    # ------------------------------------------------------------------ #
+    def get_min_price_increment(self, instrument: str) -> float:
+        """
+        Return the smallest price increment (“tick”) for the given instrument.
+
+        OANDA quotes most FX pairs to 0.0001, except JPY crosses which use 0.01.
+        Strategies can call this helper instead of duplicating the logic.
+        """
+        # Re‑use the static pip‑size helper to avoid code duplication
+        return self._pip_size(instrument)

@@ -1,6 +1,38 @@
 import argparse
 import json
 
+def _extract_pnl(bt_result):
+    """
+    Robustly pull a PnL number out of whatever Backtester.run() returns.
+
+    The historical API has changed over time:
+      * New style: returns a dict with a 'pnl' (or 'total_pnl') key.
+      * Mid‑style: returns a tuple, where the first element is that dict.
+      * Legacy: returns the raw numeric PnL directly.
+
+    Args:
+        bt_result: Any object returned by Backtester.run()
+
+    Returns:
+        float: a best‑effort PnL value (defaults to 0.0 when unavailable)
+    """
+    # Numeric return
+    if isinstance(bt_result, (int, float)):
+        return float(bt_result)
+
+    # Dict return
+    if isinstance(bt_result, dict):
+        return float(bt_result.get("pnl", bt_result.get("total_pnl", 0.0)))
+
+    # Tuple where first element is a dict
+    if isinstance(bt_result, tuple) and bt_result:
+        first = bt_result[0]
+        if isinstance(first, dict):
+            return float(first.get("pnl", first.get("total_pnl", 0.0)))
+
+    # Fallback
+    return 0.0
+
 # Safely import get_enabled_strategies for tests
 try:
     from strategy import get_enabled_strategies
@@ -78,7 +110,7 @@ def main():
     calibration_data = load_calibration_data()
     for strat in strategies:
         bt = Backtester(strat, calibration_data)
-        pnl = bt.run()
+        pnl = _extract_pnl(bt.run())
         # update strategy stats via BaseStrategy.update_trade_result
         strat.update_trade_result(win=(pnl > 0), pnl=pnl)
 
@@ -89,7 +121,7 @@ def main():
         chosen = select_strategy_ucb(strategies, total_pulls)
         data = load_round_data(i)
         bt = Backtester(chosen, data)
-        pnl = bt.run()
+        pnl = _extract_pnl(bt.run())
         chosen.update_trade_result(win=(pnl > 0), pnl=pnl)
         total_pulls += 1
 

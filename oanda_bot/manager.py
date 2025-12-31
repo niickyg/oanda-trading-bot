@@ -32,15 +32,30 @@ def load_strategies() -> List[BaseStrategy]:
     """
     cfg = load_config()
     strategies = []
-    for name in cfg.get("enabled", []):
+
+    # Strategy name to module name mapping
+    MODULE_MAP = {
+        "macdtrend": "macd_trends",
+        "rsireversion": "rsi_reversion",
+        "trendma": "trend_ma",
+        "zscorereversion": "zscore_reversion",
+        "volatilityregime": "volatility_regime",
+        "statarb": "stat_arb",
+        "orderflow": "order_flow",
+        "microreversion": "micro_reversion",
+        "momentumscalp": "momentum_scalp",
+        "bollingersqueeze": "bollinger_squeeze",
+        "volatilitygrid": "volatility_grid",
+        "triarb": "tri_arb",
+        "spreadmomentum": "spread_momentum",
+    }
+
+    for name in cfg.get("enabled_strategies", cfg.get("enabled", [])):
         params = cfg.get(name, {})
         # Normalize module filename
         raw = name.lower()
-        if raw == "macdtrend":
-            raw = "macd_trends"
-        elif raw == "rsireversion":
-            raw = "rsi_reversion"
-        module_name = f"strategy.{raw}"
+        module_file = MODULE_MAP.get(raw, raw)
+        module_name = f"strategy.{module_file}"
         try:
             module = importlib.import_module(module_name)
             cls = getattr(module, f"Strategy{name}")

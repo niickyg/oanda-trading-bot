@@ -10,8 +10,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from oanda_bot.backtest import run_backtest
-from oanda_bot.data import get_candles
 from oanda_bot.meta_optimize import run_meta_bandit
 
 try:
@@ -54,6 +52,9 @@ def evaluate_strategies(instrument: str, best_params: Dict[str, Any]) -> Dict[st
     """
     granularity = "H1"
     count = 2000
+    # Lazy-import heavy deps to avoid side effects on import
+    from oanda_bot.data import get_candles
+    from oanda_bot.backtest import run_backtest
 
     print("\nEvaluating best strategies on", instrument, granularity)
     candles = get_candles(instrument, granularity, count)
@@ -136,6 +137,7 @@ def main():
         if use_meta:
             # Meta-bandit optimization
             enabled_strategy_list = get_enabled_strategies()
+            from oanda_bot.data import get_candles
             historical_candles = get_candles(inst, "H1", 2000)
             run_meta_bandit(
                 strategies=enabled_strategy_list,

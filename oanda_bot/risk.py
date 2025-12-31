@@ -13,8 +13,9 @@ def calc_units(balance: float, pair: str, sl_pips: float, risk_pct: float) -> in
         _, quote = pair.split("_")
     except ValueError:
         raise ValueError("Pair must be in the format 'XXX_YYY'")
-    # Determine pip value for the pair: 0.01 for JPY quote currency, otherwise 0.001
+    # Determine pip value for the pair: 0.01 for JPY quote currency, otherwise 0.0001
     pip_size = 0.01 if quote == "JPY" else 0.001
+    pip_size = 0.01 if quote == "JPY" else 0.0001
     risk_amount = balance * risk_pct
     if sl_pips <= 0:
         raise ValueError("Stop-loss pips must be positive")

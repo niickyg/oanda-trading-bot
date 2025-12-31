@@ -2,20 +2,21 @@ services:
   bot:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: dev
-    image: oanda-bot:latest
+      target: prod
+    image: localhost/oanda-bot:latest
     env_file:
       - .env
     environment:
       STREAMLIT_SUPPRESS_CONFIG_WARN: "true"
       CONFIG_PATH: "/shared/best_params.json"
     volumes:
-      - ./shared:/shared    # mount shared params directory
+      - ./shared:/shared:Z    # mount shared params directory (Z for SELinux)
+      - ./live_trading.log:/app/live_trading.log:Z
+      - ./trades_log.csv:/app/trades_log.csv:Z
+      - ./live_config.json:/app/live_config.json:Z  # mount live config directly
     ports:
-      - "8000:8000"
-    command: >
-      python -m oanda_bot.main --pairs EUR_USD USD_JPY GBP_USD AUD_USD --interval S10
+      - "8001:8000"
+    command: python -m oanda_bot.main
     healthcheck:
       test: ["CMD-SHELL", "curl --fail http://localhost:8000/health || exit 1"]
       interval: 30s
@@ -36,3 +37,18 @@ services:
                done"
     volumes:
       - ./shared:/shared    # mount for hot‑swap
+
+  monitor:
+    build:
+      context: .
+    env_file:
+      - .env
+    command: python /app/monitor_and_optimize.py
+    volumes:
+      - ./trades_log.csv:/home/user0/oandabot16/oanda_bot/trades_log.csv:Z
+      - ./live_config.json:/home/user0/oandabot16/oanda_bot/live_config.json:Z
+      - ./monitor_and_optimize.py:/app/monitor_and_optimize.py:Z
+      - ./shared:/shared:Z
+    restart: unless-stopped
+    depends_on:
+      - bot

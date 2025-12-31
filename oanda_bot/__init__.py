@@ -1,27 +1,11 @@
 """
 oanda_bot package initializer.
 
-This package provides the core functionality for the OANDA trading bot,
-including backtesting, research routines, configuration management, and data access.
+This file is intentionally lightweight: no submodule imports to avoid side effects
+and speed up `import oanda_bot`. Import subpackages directly when needed.
 """
 
 __version__ = "0.1.0"
 
-# Expose top-level modules and subpackages
-from . import app
-from . import backtest
-from . import broker
-from . import config_manager
-from . import data
-from .research import run_research
-from . import strategy
-
-__all__ = [
-    "app",
-    "backtest",
-    "broker",
-    "config_manager",
-    "data",
-    "run_research",
-    "strategy",
-]
+# Only expose version at package level; submodules should be imported explicitly
+__all__ = ["__version__"]

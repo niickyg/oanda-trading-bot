@@ -57,7 +57,7 @@ def run_backtest(
     warmup: int,
 ) -> Dict[str, Any]:
     """
-    Run backtest on candles (list of OANDA candle dicts). Returns summary metrics.
+    Run backtest on candles (list of OANDA candle dicts). Returns a stats dictionary.
     """
     start_time = time.perf_counter()
 
@@ -154,7 +154,8 @@ def run_backtest(
     duration = time.perf_counter() - start_time
     logger.info("run_backtest duration: %.2f seconds", duration)
 
-    return {
+    # Build and return a stats dictionary (single, canonical API)
+    stats = {
         "trades": trades,
         "wins": wins,
         "losses": losses,
@@ -164,6 +165,7 @@ def run_backtest(
         "expectancy": expectancy,
         "total_pnl": total_pnl,
     }
+    return stats
 
 
 def main():
@@ -203,19 +205,12 @@ def main():
     logger.info("Fetched %d candles", len(candles))
 
     start = time.perf_counter()
-    results = run_backtest(strat, candles, args.warmup)
+    # Call backtest (tuple for compatibility or dict for JSON)
+    res = run_backtest(strat, candles, args.warmup)
+    results = res
     elapsed = time.perf_counter() - start
-
-    logger.info(
-        "Backtest completed in %.2f seconds",
-        elapsed,
-    )
-    print(
-        json.dumps(
-            results,
-            indent=2,
-        )
-    )
+    logger.info("Backtest completed in %.2f seconds", elapsed)
+    print(json.dumps(results, indent=2))
 
 
 if __name__ == "__main__":

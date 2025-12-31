@@ -6,17 +6,27 @@ setup(
     description="OANDA trading bot and research toolkit",
     author="Nick Guerriero",
     author_email="nickguerriero@example.com",
-    packages=find_packages(where="oanda_bot"),
-    package_dir={"": "oanda_bot"},
+    packages=find_packages(include=["oanda_bot", "oanda_bot.*"]),
     install_requires=[
         # runtime dependencies
         "oandapyV20",
         "numpy",
         "python-json-logger",
         "streamlit",
-        # add other requirements as needed
+        "jinja2",
+        "schedule",
+        "python-dotenv",
+        "ccxt",
+        "backtrader",
     ],
-    extras_require={},
+    extras_require={
+        "dev": [
+            "pytest>=7.0.0",
+            "pytest-timeout>=2.4.0",
+            "flake8",
+            "watchdog",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "oanda-bot=oanda_bot.app:main",

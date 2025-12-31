@@ -7,6 +7,7 @@ import logging
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import Any, Dict
 
 # Third-party imports
 import numpy as np
@@ -27,8 +28,31 @@ def init_worker(candles_data, strategy_class, warmup_bars):
 
 # Module-level run_one that only takes params
 def run_one(params):
+    """
+    Worker helper executed in a separate process.
+
+    Parameters
+    ----------
+    params : dict
+        The hyper‑parameter set for a single back‑test run.
+
+    Returns
+    -------
+    tuple[dict, dict]
+        (params, stats_dict) where *stats_dict* is the statistics dictionary
+        produced by ``run_backtest``.  As of July 2025 ``run_backtest`` is
+        standardised to always return a single dictionary, but a small shim
+        unwraps the first element if an older two‑tuple slips through so
+        callers remain safe.
+    """
     strategy = _strat_cls(params)
     stats = run_backtest(strategy, _candles, warmup=_warmup)
+
+    # Back‑compat: if an old `(stats, equity_curve)` tuple leaks through,
+    # take the first element so the rest of the code can assume a dict.
+    if isinstance(stats, tuple):
+        stats = stats[0]
+
     return params, stats
 
 
@@ -179,6 +203,12 @@ def main():
             futures = [executor.submit(run_one, p) for p in param_list]
             for i, fut in enumerate(as_completed(futures), 1):
                 params, stats = fut.result()
+                # Defensive: normalise legacy tuple returns
+                if isinstance(stats, tuple):
+                    stats = stats[0]
+                if not isinstance(stats, dict):
+                    logger.warning("run_backtest returned unexpected type %s; skipping", type(stats))
+                    continue
                 trades = stats.get("trades", 0)
                 if trades == 0:
                     continue

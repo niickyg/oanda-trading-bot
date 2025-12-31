@@ -63,6 +63,8 @@ def place_order(instrument: str, units: str, order_type: str = "MARKET", **kwarg
         order_data["order"]["stopLossOnFill"] = kwargs["stopLossOnFill"]
     if "takeProfitOnFill" in kwargs:
         order_data["order"]["takeProfitOnFill"] = kwargs["takeProfitOnFill"]
+    if "clientExtensions" in kwargs and kwargs["clientExtensions"]:
+        order_data["order"]["clientExtensions"] = kwargs["clientExtensions"]
     req = OrderCreate(ACCOUNT, data=order_data)
     return API.request(req)
 
@@ -75,6 +77,7 @@ def place_risk_managed_order(
     equity: float,
     risk_pct: float = 0.01,
     tp_price: Optional[float] = None,
+    strategy_name: Optional[str] = None,
 ):
     if _TEST_MODE:
         logger.info("TEST_MODE: Simulating risk‑managed order %s %s", instrument, side)
@@ -98,7 +101,7 @@ def place_risk_managed_order(
     risk_dollar = equity * risk_pct
     per_unit_risk = abs(price - stop_price)
     units = int(risk_dollar / per_unit_risk)
-    MAX_UNITS = 1_000
+    MAX_UNITS = 5_000  # Moderate position size (increased from 1_000)
     if units > MAX_UNITS:
         units = MAX_UNITS
 
@@ -126,10 +129,16 @@ def place_risk_managed_order(
         tp_str = f"{tp_price:.{decimals}f}"
         order_kwargs["takeProfitOnFill"] = {"price": tp_str}
 
+    # Tag order so it shows which strategy generated it (max 15 chars per OANDA docs)
+    client_ext = {}
+    if strategy_name:
+        client_ext = {"tag": strategy_name[:15]}
+
     return place_order(
         instrument=instrument,
         units=str(units),
-        **order_kwargs
+        clientExtensions=client_ext,
+        **order_kwargs,
     )
 
 

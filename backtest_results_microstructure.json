@@ -1,0 +1,442 @@
+{
+  "strategy": "SpreadMomentum",
+  "instrument": "EUR_USD",
+  "granularity": "S5",
+  "total_candles": 5000,
+  "parameters": {
+    "spread_window": 30,
+    "volume_window": 20,
+    "velocity_window": 10,
+    "spread_expansion_threshold": 1.5,
+    "volume_surge_threshold": 2.0,
+    "velocity_accel_threshold": 1.3,
+    "efficiency_threshold": 0.7,
+    "max_hold_bars": 12,
+    "profit_target_atr": 1.2,
+    "stop_loss_atr": 0.8,
+    "max_duration": 12,
+    "_history": [
+      {
+        "win": true,
+        "pnl": 71.02698209936062
+      },
+      {
+        "win": true,
+        "pnl": 71.73725192035423
+      },
+      {
+        "win": false,
+        "pnl": -72.45462443955778
+      },
+      {
+        "win": false,
+        "pnl": -71.73007819516219
+      },
+      {
+        "win": true,
+        "pnl": 71.01277741321057
+      },
+      {
+        "win": true,
+        "pnl": 71.72290518734268
+      },
+      {
+        "win": false,
+        "pnl": -72.4401342392161
+      },
+      {
+        "win": false,
+        "pnl": -71.71573289682395
+      },
+      {
+        "win": true,
+        "pnl": 70.99857556785571
+      },
+      {
+        "win": true,
+        "pnl": 71.70856132353425
+      },
+      {
+        "win": true,
+        "pnl": 72.4256469367696
+      },
+      {
+        "win": true,
+        "pnl": 73.1499034061373
+      },
+      {
+        "win": false,
+        "pnl": -73.88140244019867
+      },
+      {
+        "win": false,
+        "pnl": -73.14258841579668
+      },
+      {
+        "win": true,
+        "pnl": 72.41116253163871
+      },
+      {
+        "win": true,
+        "pnl": 73.13527415695509
+      },
+      {
+        "win": true,
+        "pnl": 73.86662689852464
+      },
+      {
+        "win": true,
+        "pnl": 74.60529316750988
+      },
+      {
+        "win": false,
+        "pnl": -75.35134609918498
+      },
+      {
+        "win": false,
+        "pnl": -74.59783263819314
+      },
+      {
+        "win": true,
+        "pnl": 73.85185431181121
+      },
+      {
+        "win": true,
+        "pnl": 74.59037285492933
+      },
+      {
+        "win": false,
+        "pnl": -75.33627658347861
+      },
+      {
+        "win": false,
+        "pnl": -74.58291381764383
+      },
+      {
+        "win": false,
+        "pnl": -73.83708467946738
+      },
+      {
+        "win": false,
+        "pnl": -73.0987138326727
+      },
+      {
+        "win": false,
+        "pnl": -72.36772669434598
+      },
+      {
+        "win": true,
+        "pnl": 71.64404942740252
+      },
+      {
+        "win": false,
+        "pnl": -72.36048992167655
+      },
+      {
+        "win": false,
+        "pnl": -71.63688502245978
+      },
+      {
+        "win": true,
+        "pnl": 70.92051617223518
+      },
+      {
+        "win": false,
+        "pnl": -71.62972133395753
+      },
+      {
+        "win": true,
+        "pnl": 70.91342412061796
+      },
+      {
+        "win": true,
+        "pnl": 71.62255836182415
+      },
+      {
+        "win": false,
+        "pnl": -72.33878394544239
+      },
+      {
+        "win": true,
+        "pnl": 71.61539610598795
+      },
+      {
+        "win": true,
+        "pnl": 72.33155006704784
+      },
+      {
+        "win": false,
+        "pnl": -73.05486556771832
+      },
+      {
+        "win": false,
+        "pnl": -72.32431691204113
+      },
+      {
+        "win": false,
+        "pnl": -71.60107374292072
+      },
+      {
+        "win": false,
+        "pnl": -70.88506300549152
+      },
+      {
+        "win": true,
+        "pnl": 70.1762123754366
+      },
+      {
+        "win": false,
+        "pnl": -70.87797449919097
+      },
+      {
+        "win": false,
+        "pnl": -70.16919475419907
+      },
+      {
+        "win": true,
+        "pnl": 69.46750280665707
+      },
+      {
+        "win": true,
+        "pnl": 70.16217783472364
+      },
+      {
+        "win": true,
+        "pnl": 70.86379961307087
+      },
+      {
+        "win": false,
+        "pnl": -71.57243760920159
+      },
+      {
+        "win": true,
+        "pnl": 70.85671323310957
+      },
+      {
+        "win": false,
+        "pnl": -71.56528036544067
+      }
+    ]
+  },
+  "metrics": {
+    "total_trades": 454,
+    "wins": 211,
+    "losses": 243,
+    "win_rate": 0.4647577092511013,
+    "profit_factor": 0.8644591088488167,
+    "max_drawdown": 4199.896186336498,
+    "max_drawdown_pct": 37.67856277463893,
+    "sharpe_ratio": -5.111719991834008,
+    "total_pnl": -2915.037243821362,
+    "total_pnl_pct": -29.150372438213623,
+    "avg_win": 88.11214436873966,
+    "avg_loss": 88.50493706018696,
+    "expectancy": -6.4207868806637975
+  },
+  "trades_summary": {
+    "first_10": [
+      {
+        "entry_idx": 88,
+        "exit_idx": 89,
+        "side": "SELL",
+        "entry_price": 1.17844,
+        "exit_price": 1.178462857142857,
+        "pips": -0.22857142857102275,
+        "pnl": -99.99999999999999,
+        "reason": "SL"
+      },
+      {
+        "entry_idx": 89,
+        "exit_idx": 91,
+        "side": "BUY",
+        "entry_price": 1.17847,
+        "exit_price": 1.17849,
+        "pips": 0.20000000000131024,
+        "pnl": 99.0,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 95,
+        "exit_idx": 97,
+        "side": "SELL",
+        "entry_price": 1.1785,
+        "exit_price": 1.178482142857143,
+        "pips": 0.1785714285706952,
+        "pnl": 99.99000000000001,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 99,
+        "exit_idx": 101,
+        "side": "BUY",
+        "entry_price": 1.17851,
+        "exit_price": 1.1785307142857142,
+        "pips": 0.20714285714262815,
+        "pnl": 100.98989999999999,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 107,
+        "exit_idx": 108,
+        "side": "SELL",
+        "entry_price": 1.1786,
+        "exit_price": 1.1786257142857144,
+        "pips": -0.2571428571429557,
+        "pnl": -101.99979900000001,
+        "reason": "SL"
+      },
+      {
+        "entry_idx": 110,
+        "exit_idx": 117,
+        "side": "BUY",
+        "entry_price": 1.17859,
+        "exit_price": 1.1785635714285714,
+        "pips": -0.26428571428649406,
+        "pnl": -100.97980101000002,
+        "reason": "SL"
+      },
+      {
+        "entry_idx": 121,
+        "exit_idx": 125,
+        "side": "SELL",
+        "entry_price": 1.17849,
+        "exit_price": 1.1784757142857143,
+        "pips": 0.14285714285744433,
+        "pnl": 99.9700029999,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 128,
+        "exit_idx": 129,
+        "side": "BUY",
+        "entry_price": 1.17848,
+        "exit_price": 1.1784964285714286,
+        "pips": 0.16428571428583894,
+        "pnl": 100.96970302989901,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 137,
+        "exit_idx": 141,
+        "side": "SELL",
+        "entry_price": 1.17851,
+        "exit_price": 1.1784907142857142,
+        "pips": 0.1928571428577719,
+        "pnl": 101.979400060198,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 144,
+        "exit_idx": 145,
+        "side": "BUY",
+        "entry_price": 1.17848,
+        "exit_price": 1.1784635714285714,
+        "pips": -0.16428571428583894,
+        "pnl": -102.99919406079998,
+        "reason": "SL"
+      }
+    ],
+    "last_10": [
+      {
+        "entry_idx": 4920,
+        "exit_idx": 4924,
+        "side": "BUY",
+        "entry_price": 1.1777,
+        "exit_price": 1.1776614285714284,
+        "pips": -0.3857142857155438,
+        "pnl": -70.88506300549152,
+        "reason": "SL"
+      },
+      {
+        "entry_idx": 4924,
+        "exit_idx": 4925,
+        "side": "SELL",
+        "entry_price": 1.17762,
+        "exit_price": 1.1775857142857142,
+        "pips": 0.3428571428565341,
+        "pnl": 70.1762123754366,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 4933,
+        "exit_idx": 4935,
+        "side": "BUY",
+        "entry_price": 1.17764,
+        "exit_price": 1.17761,
+        "pips": -0.2999999999997449,
+        "pnl": -70.87797449919097,
+        "reason": "SL"
+      },
+      {
+        "entry_idx": 4935,
+        "exit_idx": 4939,
+        "side": "SELL",
+        "entry_price": 1.17758,
+        "exit_price": 1.1776107142857144,
+        "pips": -0.30714285714328327,
+        "pnl": -70.16919475419907,
+        "reason": "SL"
+      },
+      {
+        "entry_idx": 4946,
+        "exit_idx": 4950,
+        "side": "BUY",
+        "entry_price": 1.17762,
+        "exit_price": 1.1776485714285714,
+        "pips": 0.28571428571488866,
+        "pnl": 69.46750280665707,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 4952,
+        "exit_idx": 4954,
+        "side": "SELL",
+        "entry_price": 1.17758,
+        "exit_price": 1.1775464285714285,
+        "pips": 0.3357142857152162,
+        "pnl": 70.16217783472364,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 4958,
+        "exit_idx": 4961,
+        "side": "BUY",
+        "entry_price": 1.17758,
+        "exit_price": 1.177607142857143,
+        "pips": 0.2714285714300324,
+        "pnl": 70.86379961307087,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 4965,
+        "exit_idx": 4967,
+        "side": "SELL",
+        "entry_price": 1.17778,
+        "exit_price": 1.1778128571428572,
+        "pips": -0.32857142857167787,
+        "pnl": -71.57243760920159,
+        "reason": "SL"
+      },
+      {
+        "entry_idx": 4976,
+        "exit_idx": 4977,
+        "side": "SELL",
+        "entry_price": 1.1778,
+        "exit_price": 1.177752857142857,
+        "pips": 0.4714285714291222,
+        "pnl": 70.85671323310957,
+        "reason": "TP"
+      },
+      {
+        "entry_idx": 4979,
+        "exit_idx": 4983,
+        "side": "BUY",
+        "entry_price": 1.17774,
+        "exit_price": 1.177695,
+        "pips": -0.4500000000007276,
+        "pnl": -71.56528036544067,
+        "reason": "SL"
+      }
+    ]
+  }
+}

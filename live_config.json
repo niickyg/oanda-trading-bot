@@ -1,26 +1,72 @@
 {
+  "enabled_strategies": [
+    "MomentumScalp",
+    "MACDTrend"
+  ],
+  "disabled_strategies": [
+    "TrendMA",
+    "RSIReversion",
+    "VolatilityRegime",
+    "VolatilityGrid",
+    "TriArb",
+    "SpreadMomentum",
+    "MicroReversion",
+    "OrderFlow",
+    "BollingerSqueeze",
+    "ZScoreReversion",
+    "StatArb"
+  ],
+  "MomentumScalp": {
+    "momentum_period": 8,
+    "atr_period": 14,
+    "momentum_threshold": 1.5,
+    "profit_target_atr": 2.5,
+    "stop_loss_atr": 1.0,
+    "max_hold_bars": 60,
+    "cooldown_bars": 10
+  },
   "MACDTrend": {
-    "EUR_USD": {
-      "EUR_USD": {
-        "sl_mult": 3.0,
-        "tp_mult": 3.0,
-        "max_duration": 100,
-        "trail_atr": 0.5,
-        "trades": 33,
-        "win_rate": 0.5454545454545454,
-        "expectancy": 0.0010702813852814103,
-        "sharpe": null,
-        "drawdown": null
-      },
-      "sl_mult": 3.0,
-      "tp_mult": 3.0,
-      "max_duration": 100,
-      "trail_atr": 0.5,
-      "trades": 33,
-      "win_rate": 0.5454545454545454,
-      "expectancy": 0.0010702813852814103,
-      "sharpe": null,
-      "drawdown": null
-    }
+    "macd_fast": 8,
+    "macd_slow": 17,
+    "macd_sig": 9,
+    "ema_trend": 100
+  },
+  "global": {
+    "account_balance": 100000,
+    "sl_mult": 1.5,
+    "tp_mult": 4.0,
+    "max_units_per_trade": 5000,
+    "max_positions_per_pair": 1,
+    "max_total_positions": 4,
+    "cooldown_seconds": 60,
+    "min_atr_threshold": 0.00005,
+    "risk_per_trade_pct": 0.01,
+    "max_daily_loss_pct": 0.03,
+    "max_drawdown_pct": 0.05,
+    "preferred_pairs": [
+      "EUR_USD",
+      "GBP_USD",
+      "USD_JPY",
+      "USD_CHF",
+      "EUR_GBP",
+      "AUD_USD",
+      "NZD_USD",
+      "EUR_JPY",
+      "GBP_JPY"
+    ],
+    "blocked_pairs": [
+      "NZD_JPY",
+      "AUD_NZD",
+      "AUD_JPY",
+      "EUR_AUD",
+      "EUR_CAD"
+    ],
+    "active_sessions": ["london", "new_york", "overlap", "asian"],
+    "blocked_hours_utc": [],
+    "avoid_news_minutes": 15,
+    "compound_monthly": false,
+    "target_monthly_return_pct": 0.02,
+    "rebalance_on_milestone": false,
+    "aggressive_mode": true
   }
 }
